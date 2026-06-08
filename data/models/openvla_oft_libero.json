@@ -1,0 +1,102 @@
+{
+    "model": "openvla_oft_libero",
+    "policy_class": "OpenVLAOFTPolicy",
+    "checkpoint": "moojink/openvla-7b-oft-finetuned-libero-spatial",
+    "robot_type": "franka_panda_libero",
+    "robot_class": "arm7g1",
+    "chunk_size": 8,
+    "control_rate": 10,
+    "robot_type_variables": {
+        "franka_panda_libero": {"unnorm_key": "libero_spatial_no_noops"}
+    },
+    "decision_variables": {
+        "unnorm_key": "LIBERO suite-specific denormalization key (spatial/object/goal/10)."
+    },
+    "features": {
+        "observation.images.image": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [224, 224, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "Primary agentview resized to 224."
+        },
+        "observation.images.wrist_image": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [224, 224, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "Wrist image (robot0_eye_in_hand)."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "LIBERO language instruction."
+        },
+        "observation.state.robot0_eef_pos": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["robot0_eef_pos.x", "robot0_eef_pos.y", "robot0_eef_pos.z"],
+            "normalization": "identity",
+            "comment": "Proprio optional at inference; OFT trained with OSC deltas like base OpenVLA."
+        },
+        "action.delta_eef_pos": {
+            "role": "action",
+            "state_type": "EE_DEL_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "kp": 150.0,
+            "kd": 24.49,
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["delta_eef_pos.dx", "delta_eef_pos.dy", "delta_eef_pos.dz"],
+            "normalization": "quantile",
+            "comment": "OSC-aligned EE delta pos; OFT outputs 8-step chunks (chunk_size=8)."
+        },
+        "action.delta_eef_rot": {
+            "role": "action",
+            "state_type": "EE_DEL_ROT",
+            "state_representation": "AXISANGLE",
+            "frame": "eef",
+            "kp": 150.0,
+            "kd": 24.49,
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["delta_eef_axis_angle.drx", "delta_eef_axis_angle.dry", "delta_eef_axis_angle.drz"],
+            "normalization": "quantile",
+            "comment": "OSC rotation delta (axis-angle, eef frame) after unnormalization."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "NORM11",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["gripper.open_close"],
+            "limits": {"min": [-1.0], "max": [1.0]},
+            "normalization": "quantile",
+            "comment": "Absolute gripper [-1,1] in LIBERO OSC stack."
+        }
+    },
+    "comment": "OpenVLA-OFT LIBERO spatial finetune (parallel decode, 8-action chunks). 7-DoF OSC delta action matches franka_panda_libero env. unnorm_key per LIBERO suite."
+}

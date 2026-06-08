@@ -1,0 +1,120 @@
+{
+    "robot_type": "franka_panda_maniskill_pickcube",
+    "robot_class": "arm7g1",
+    "control_rate": 20,
+    "features": {
+        "observation.images.base_camera_rgb": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "uint8",
+            "state_representation": "HWC",
+            "shape": [128, 128, 3],
+            "names": ["height", "width", "channel"],
+            "stats": {"min": [[[0]], [[0]], [[0]]], "max": [[[255]], [[255]], [[255]]]},
+            "comment": "Default sensor base_camera RGB (obs_mode rgb). OPEN: resolution may vary by shader."
+        },
+        "observation.state.qpos": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [9],
+            "order": "0-8",
+            "names": [
+                "panda_joint1", "panda_joint2", "panda_joint3", "panda_joint4",
+                "panda_joint5", "panda_joint6", "panda_joint7",
+                "panda_finger_joint1", "panda_finger_joint2"
+            ],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "agent.qpos: 7 arm + 2 finger joints."
+        },
+        "observation.state.qvel": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_VEL",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [9],
+            "order": "9-17",
+            "names": [
+                "panda_joint1.vel", "panda_joint2.vel", "panda_joint3.vel", "panda_joint4.vel",
+                "panda_joint5.vel", "panda_joint6.vel", "panda_joint7.vel",
+                "panda_finger_joint1.vel", "panda_finger_joint2.vel"
+            ],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "agent.qvel."
+        },
+        "observation.state.tcp_pose": {
+            "role": "observation",
+            "state_type": "EE_ABS_POSE",
+            "state_representation": "XYZ_QUATWXYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [7],
+            "order": "18-24",
+            "names": [
+                "tcp_pose.x", "tcp_pose.y", "tcp_pose.z",
+                "tcp_pose.qw", "tcp_pose.qx", "tcp_pose.qy", "tcp_pose.qz"
+            ],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "TCP pose from agent.tcp_pose.raw_pose (pos+quat). OPEN: quat order wxyz vs xyzw."
+        },
+        "observation.state.obj_to_goal": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "world",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "25-27",
+            "names": ["obj_to_goal.x", "obj_to_goal.y", "obj_to_goal.z"],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Task extra: cube to goal offset (state obs_mode)."
+        },
+        "action.delta_eef_pos": {
+            "role": "action",
+            "state_type": "EE_DEL_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["delta_eef_pos.dx", "delta_eef_pos.dy", "delta_eef_pos.dz"],
+            "limits": {"min": [-1.0, -1.0, -1.0], "max": [1.0, 1.0, 1.0]},
+            "stats": {"mean": [], "std": [], "min": [-1.0, -1.0, -1.0], "max": [1.0, 1.0, 1.0]},
+            "comment": "pd_ee_delta_pose arm: normalized [-1,1] delta position."
+        },
+        "action.delta_eef_axis_angle": {
+            "role": "action",
+            "state_type": "EE_DEL_ROT",
+            "state_representation": "AXISANGLE",
+            "frame": "eef",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["delta_eef_axis_angle.drx", "delta_eef_axis_angle.dry", "delta_eef_axis_angle.drz"],
+            "limits": {"min": [-1.0, -1.0, -1.0], "max": [1.0, 1.0, 1.0]},
+            "stats": {"mean": [], "std": [], "min": [-1.0, -1.0, -1.0], "max": [1.0, 1.0, 1.0]},
+            "comment": "Rotation delta axis-angle in TCP frame (ManiSkill pd_ee_delta_pose)."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "NORM11",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["gripper"],
+            "limits": {"min": [-1.0], "max": [1.0]},
+            "stats": {"mean": [], "std": [], "min": [-1.0], "max": [1.0]},
+            "comment": "Normalized gripper target (7-dim action total)."
+        }
+    },
+    "comment": "ManiSkill3 PickCube-v1, Panda, control_mode=pd_ee_delta_pose. 7-dim normalized action; state obs flattened from agent+extra."
+}

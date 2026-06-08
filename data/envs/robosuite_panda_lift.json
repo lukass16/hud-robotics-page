@@ -1,0 +1,111 @@
+{
+    "robot_type": "franka_panda_robosuite_lift",
+    "robot_class": "arm7g1",
+    "control_rate": 20,
+    "features": {
+        "observation.images.agentview_image": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "uint8",
+            "state_representation": "HWC",
+            "shape": [256, 256, 3],
+            "names": ["height", "width", "channel"],
+            "stats": {"min": [[[0]], [[0]], [[0]]], "max": [[[255]], [[255]], [[255]]]},
+            "comment": "Third-person agentview (default robosuite Lift camera)."
+        },
+        "observation.images.robot0_eye_in_hand_image": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "uint8",
+            "state_representation": "HWC",
+            "shape": [256, 256, 3],
+            "names": ["height", "width", "channel"],
+            "stats": {"min": [[[0]], [[0]], [[0]]], "max": [[[255]], [[255]], [[255]]]},
+            "comment": "Wrist-mounted eye-in-hand camera."
+        },
+        "observation.state.robot0_eef_pos": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["robot0_eef_pos.x", "robot0_eef_pos.y", "robot0_eef_pos.z"],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "EEF position in robot base frame."
+        },
+        "observation.state.robot0_eef_quat": {
+            "role": "observation",
+            "state_type": "EE_ABS_ROT",
+            "state_representation": "QUATXYZW",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [4],
+            "order": "3-6",
+            "names": ["robot0_eef_quat.x", "robot0_eef_quat.y", "robot0_eef_quat.z", "robot0_eef_quat.w"],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Native robosuite quaternion (xyzw)."
+        },
+        "observation.state.robot0_gripper_qpos": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [2],
+            "order": "7-8",
+            "names": ["robot0_gripper_qpos.finger_joint1", "robot0_gripper_qpos.finger_joint2"],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Parallel-jaw finger positions."
+        },
+        "action.delta_eef_pos": {
+            "role": "action",
+            "state_type": "EE_DEL_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "kp": 150.0,
+            "kd": 24.49,
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["delta_eef_pos.dx", "delta_eef_pos.dy", "delta_eef_pos.dz"],
+            "limits": {"min": [-0.05, -0.05, -0.05], "max": [0.05, 0.05, 0.05]},
+            "stats": {"mean": [], "std": [], "min": [-1.0, -1.0, -1.0], "max": [1.0, 1.0, 1.0]},
+            "comment": "OSC_POSE translation delta; input clipped [-1,1] scaled to output_max 0.05 m."
+        },
+        "action.delta_eef_axis_angle": {
+            "role": "action",
+            "state_type": "EE_DEL_ROT",
+            "state_representation": "AXISANGLE",
+            "frame": "world",
+            "kp": 150.0,
+            "kd": 24.49,
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["delta_eef_axis_angle.drx", "delta_eef_axis_angle.dry", "delta_eef_axis_angle.drz"],
+            "limits": {"min": [-0.5, -0.5, -0.5], "max": [0.5, 0.5, 0.5]},
+            "stats": {"mean": [], "std": [], "min": [-1.0, -1.0, -1.0], "max": [1.0, 1.0, 1.0]},
+            "comment": "OSC_POSE rot delta in world frame (robosuite docs); axis-angle magnitude in rad."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "NORM11",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["gripper.open_close"],
+            "limits": {"min": [-1.0], "max": [1.0]},
+            "stats": {"mean": [], "std": [], "min": [-1.0], "max": [1.0]},
+            "comment": "Gripper command; absolute open/close while arm is delta."
+        }
+    },
+    "comment": "robosuite Lift (Panda, OSC_POSE default), 20 Hz. control_delta=true; rot deltas in world frame per robosuite controller docs."
+}

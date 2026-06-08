@@ -1,0 +1,114 @@
+{
+    "model": "openvla_7b",
+    "policy_class": "OpenVLAPolicy",
+    "checkpoint": "openvla/openvla-7b",
+    "robot_type": ["widowx", "widowx250s_bridge", "bridge"],
+    "robot_class": "multi",
+    "chunk_size": 1,
+    "control_rate": 5,
+    "robot_type_variables": {
+        "widowx": {"unnorm_key": "bridge_orig"},
+        "widowx250s_bridge": {"unnorm_key": "bridge_orig"},
+        "bridge": {"unnorm_key": "bridge_orig"}
+    },
+    "decision_variables": {
+        "unnorm_key": "Dataset-specific action denormalization key in the OpenVLA checkpoint (e.g. bridge_orig, libero_10_no_noops)."
+    },
+    "features": {
+        "observation.images.image": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [224, 224, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "Primary RGB (Bridge image_0 / SIMPLER external). Resized to 224 for DINO+SigLIP."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "Prompt: 'In: What action should the robot take to {instruction}?\\nOut:'"
+        },
+        "observation.state.eef_pos": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["eef_pos.x", "eef_pos.y", "eef_pos.z"],
+            "normalization": "identity",
+            "comment": "Optional proprio; base model is image+language only at inference. OPEN: verify if used."
+        },
+        "observation.state.eef_euler": {
+            "role": "observation",
+            "state_type": "EE_ABS_ROT",
+            "state_representation": "EULXYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["eef_euler.roll", "eef_euler.pitch", "eef_euler.yaw"],
+            "normalization": "identity",
+            "comment": "OXE POS_EULER state encoding for Bridge. OPEN: intrinsic vs extrinsic euler."
+        },
+        "observation.state.gripper": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["gripper_state"],
+            "normalization": "identity",
+            "comment": "Gripper openness scalar from dataset EEF_state block."
+        },
+        "action.delta_eef_pos": {
+            "role": "action",
+            "state_type": "EE_DEL_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["delta_eef_pos.dx", "delta_eef_pos.dy", "delta_eef_pos.dz"],
+            "normalization": "quantile",
+            "comment": "Normalized 7-DoF EE delta (pos); unnormalize via unnorm_key. OPEN: stats per unnorm_key."
+        },
+        "action.delta_eef_euler": {
+            "role": "action",
+            "state_type": "EE_DEL_ROT",
+            "state_representation": "EULXYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["delta_eef_euler.roll", "delta_eef_euler.pitch", "delta_eef_euler.yaw"],
+            "normalization": "quantile",
+            "comment": "Roll-pitch-yaw deltas (OXE EEF_POS). OPEN: delta frame vs base/world."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "NORM01",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["gripper.open_close"],
+            "limits": {"min": [0.0], "max": [1.0]},
+            "normalization": "quantile",
+            "comment": "Gripper dim in normalized action vector; absolute open amount in Bridge data."
+        }
+    },
+    "comment": "OpenVLA-7B zero-shot on Bridge/WidowX (unnorm_key=bridge_orig). Single-step action (chunk_size=1), 224px RGB, 7-DoF (xyz+RPY+gripper). Pairs widowx env."
+}

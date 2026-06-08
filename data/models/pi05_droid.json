@@ -1,0 +1,95 @@
+{
+    "model": "pi05_droid",
+    "policy_class": "PI05Policy",
+    "checkpoint": "lerobot/pi05_droid",
+    "trained_on": "DROID (openpi)",
+    "robot_type": "droid_franka_robotiq",
+    "robot_class": "arm7g1",
+    "chunk_size": 15,
+    "control_rate": 15,
+    "robot_type_variables": {
+        "droid_franka_robotiq": {}
+    },
+    "decision_variables": {},
+    "features": {
+        "observation.images.base_0_rgb": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "CHW",
+            "shape": [3, 224, 224],
+            "names": ["channel", "height", "width"],
+            "normalization": "identity",
+            "comment": "Primary/exterior camera slot. float32 [0,1] CHW; the agent maps the env's exterior_image here and resizes to 224."
+        },
+        "observation.images.left_wrist_0_rgb": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "CHW",
+            "shape": [3, 224, 224],
+            "names": ["channel", "height", "width"],
+            "normalization": "identity",
+            "comment": "Wrist camera slot; the env's wrist_image maps here."
+        },
+        "observation.images.right_wrist_0_rgb": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "CHW",
+            "shape": [3, 224, 224],
+            "names": ["channel", "height", "width"],
+            "normalization": "identity",
+            "comment": "Second wrist slot (DROID has two wrist cams); the single-arm RoboLab env has no match, so the agent zero-fills it."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "Task instruction (language conditioning); required by the VLA."
+        },
+        "observation.state": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [32],
+            "order": "0-31",
+            "names": [
+                "panda_joint1", "panda_joint2", "panda_joint3", "panda_joint4",
+                "panda_joint5", "panda_joint6", "panda_joint7", "gripper.opening"
+            ],
+            "normalization": "quantiles",
+            "comment": "DROID joint-space proprio: active dims 0-6 = 7 Panda arm joint positions (rad), dim 7 = gripper opening; dims 8-31 are zero padding (model max_state_dim=32). QUANTILE-normalized. This is JOINT proprio — it matches the RoboLab DROID env's joint state (the agent zero-pads the env's 8-dim state to 32)."
+        },
+        "action.arm_joint_vel": {
+            "role": "action",
+            "state_type": "JOINT_VEL",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad/s",
+            "shape": [7],
+            "order": "0-6",
+            "names": [
+                "panda_joint1", "panda_joint2", "panda_joint3", "panda_joint4",
+                "panda_joint5", "panda_joint6", "panda_joint7"
+            ],
+            "normalization": "quantiles",
+            "comment": "7 Panda arm joint VELOCITY targets (the DROID action space; verified empirically — the arm dims are small velocities, not absolute joint positions). The model emits 32-dim actions; dims 0-6 are these, dims 8-31 are padding. Pairs with the env's joint_vel branch (JointVelocityActionCfg)."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "NORM01",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "7",
+            "names": ["gripper.open_close"],
+            "normalization": "quantiles",
+            "comment": "Absolute gripper command in [0,1] (action dim 7); the agent clips to NORM01 and the env's binary gripper closes when >0.5."
+        }
+    },
+    "comment": "Official openpi DROID pi0.5, checkpoint lerobot/pi05_droid (loads as lerobot PI05Policy). Inputs: 3 cameras (base + 2 wrist; the single-arm RoboLab env fills base<-exterior, left_wrist<-wrist, right_wrist zero-padded) + 32-dim padded JOINT proprio (active 8: 7 joint pos + gripper). Output: 32-dim action, active 8 = 7 arm joint VELOCITIES + absolute gripper. chunk_size 15, ~15 Hz, QUANTILE normalization. Pairs with the env's joint_vel branch (launch env_server with --control joint_vel; see envs/droid_joint_vel.json). NB: this checkpoint's processor pipeline uses the pre-0.5.x step name 'relative_actions_processor' — the agent registers a compat alias at import. Unlike a LIBERO-trained pi0.5, the proprio here is joint-space, so it matches the env's joint state."
+}

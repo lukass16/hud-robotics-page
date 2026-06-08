@@ -1,0 +1,126 @@
+{
+    "model": "octo_small",
+    "policy_class": "OctoPolicy",
+    "checkpoint": "rail-berkeley/octo-small",
+    "robot_class": "multi",
+    "robot_type": ["widowx", "franka_panda_libero", "bridge"],
+    "chunk_size": 4,
+    "control_rate": 10,
+    "robot_type_variables": {
+        "widowx": {"dataset_name": "bridge_dataset"},
+        "franka_panda_libero": {"dataset_name": "libero"},
+        "bridge": {"dataset_name": "bridge_dataset"}
+    },
+    "decision_variables": {
+        "dataset_name": "RLDS dataset id for per-embodiment action normalization stats (Octo config.py)."
+    },
+    "features": {
+        "observation.images.primary": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [256, 256, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "Primary 256x256 RGB; CNN patch tokenized 16x16."
+        },
+        "observation.images.wrist": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [256, 256, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "Optional wrist view; zero-pad if absent (Bridge has no wrist in OXE config)."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "Natural-language task string or goal image (goal-image mode omits text)."
+        },
+        "observation.state.proprio_eef_pos": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["proprio.eef_pos.x", "proprio.eef_pos.y", "proprio.eef_pos.z"],
+            "normalization": "mean_std",
+            "comment": "First 3 dims of Octo flat proprio window. OPEN: exact layout per dataset_name."
+        },
+        "observation.state.proprio_eef_quat": {
+            "role": "observation",
+            "state_type": "EE_ABS_ROT",
+            "state_representation": "QUATXYZW",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [4],
+            "order": "3-6",
+            "names": [
+                "proprio.eef_quat.x", "proprio.eef_quat.y", "proprio.eef_quat.z", "proprio.eef_quat.w"
+            ],
+            "normalization": "mean_std",
+            "comment": "Quaternion xyzw (RLDS/OXE convention). OPEN: verify per dataset_name."
+        },
+        "observation.state.proprio_gripper": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "7",
+            "names": ["proprio.gripper"],
+            "normalization": "mean_std",
+            "comment": "Gripper scalar (8th dim). Reassembles with pos+quat via order 0-7. OPEN: window stacks 2 frames in checkpoint — verify."
+        },
+        "action.delta_eef_pos": {
+            "role": "action",
+            "state_type": "EE_DEL_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["delta_eef_pos.dx", "delta_eef_pos.dy", "delta_eef_pos.dz"],
+            "normalization": "mean_std",
+            "comment": "7-DoF EE delta chunk (4 steps); diffusion head output."
+        },
+        "action.delta_eef_rot": {
+            "role": "action",
+            "state_type": "EE_DEL_ROT",
+            "state_representation": "AXISANGLE",
+            "frame": "eef",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["delta_eef_axis_angle.drx", "delta_eef_axis_angle.dry", "delta_eef_axis_angle.drz"],
+            "normalization": "mean_std",
+            "comment": "Rotation delta as axis-angle in RLDS mix. OPEN: verify per-dataset frame."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "NORM01",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["gripper.open_close"],
+            "normalization": "mean_std",
+            "comment": "Gripper channel in 7-DoF action; often absolute in chunk."
+        }
+    },
+    "comment": "Octo-Small (27M) diffusion VLA; chunk_size=4, window=2. Multi-embodiment via dataset_name stats. ~10 Hz training rate (varies by corpus)."
+}

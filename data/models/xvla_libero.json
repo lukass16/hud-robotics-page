@@ -1,0 +1,122 @@
+{
+    "model": "xvla_libero",
+    "policy_class": "XVLAPolicy",
+    "checkpoint": "lerobot/xvla-libero",
+    "robot_type": "franka_panda_libero",
+    "robot_class": "arm7g1",
+    "chunk_size": 50,
+    "control_rate": 10,
+    "robot_type_variables": {
+        "franka_panda_libero": {}
+    },
+    "decision_variables": {},
+    "features": {
+        "observation.images.image": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [256, 256, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "Primary slot (env agentview)."
+        },
+        "observation.images.wrist_image": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [256, 256, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "Wrist slot (env robot0_eye_in_hand)."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "Task instruction (language conditioning); required by the VLA."
+        },
+        "observation.state.eef_pos": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["robot0_eef_pos.x", "robot0_eef_pos.y", "robot0_eef_pos.z"],
+            "normalization": "identity",
+            "comment": "Absolute eef position, base frame (LIBERO)."
+        },
+        "observation.state.eef_rot": {
+            "role": "observation",
+            "state_type": "EE_ABS_ROT",
+            "state_representation": "AXISANGLE",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["robot0_eef_axis_angle.rx", "robot0_eef_axis_angle.ry", "robot0_eef_axis_angle.rz"],
+            "normalization": "identity",
+            "comment": "Absolute eef orientation, axis-angle, base frame (LIBERO)."
+        },
+        "observation.state.gripper": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [2],
+            "order": "6-7",
+            "names": ["robot0_gripper_qpos.finger_joint1", "robot0_gripper_qpos.finger_joint2"],
+            "limits": {"min": [0.0, -0.04], "max": [0.04, 0.0]},
+            "normalization": "identity",
+            "comment": "Gripper finger qpos, 2 DOF (LIBERO)."
+        },
+        "action.eef_pos": {
+            "role": "action",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["target_eef_pos.x", "target_eef_pos.y", "target_eef_pos.z"],
+            "normalization": "identity",
+            "comment": "Absolute eef target position, base frame."
+        },
+        "action.eef_rot": {
+            "role": "action",
+            "state_type": "EE_ABS_ROT",
+            "state_representation": "AXISANGLE",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["target_eef_axis_angle.rx", "target_eef_axis_angle.ry", "target_eef_axis_angle.rz"],
+            "normalization": "identity",
+            "comment": "Absolute eef target orientation, axis-angle, base frame."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "NORM11",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["gripper.open_close"],
+            "limits": {"min": [-1.0], "max": [1.0]},
+            "normalization": "min_max",
+            "comment": "Gripper open/close, thresholded to {-1 open, +1 close} at 0.5."
+        }
+    },
+    "comment": "X-VLA finetuned for LIBERO (one Franka Panda), domain_id 3 baked into the lerobot/xvla-libero checkpoint. The policy's real native output is a 20-dim two-arm ee6d_abs target (pos3 + rot6d6 + gripper1 per arm, identity-norm metric EE space); the LIBERO eval client (axis_angle adapter, demos/benchmarks/agents/xvla.py) reduces arm0 to this 7-dim ee_abs action: rot6d -> axis-angle, gripper thresholded at 0.5. Pairs with an absolute-control LIBERO env (env_server.py --control absolute). Full 20-dim native form and the other embodiment reductions live in contracts/experiments/xvla.json."
+}

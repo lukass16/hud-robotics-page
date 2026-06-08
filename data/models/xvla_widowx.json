@@ -1,0 +1,120 @@
+{
+    "model": "xvla_widowx",
+    "policy_class": "XVLAPolicy",
+    "checkpoint": "lerobot/xvla-widowx",
+    "robot_type": "widowx250s_bridge",
+    "robot_class": "arm6g1",
+    "chunk_size": 50,
+    "control_rate": 5,
+    "robot_type_variables": {
+        "widowx250s_bridge": {}
+    },
+    "decision_variables": {},
+    "features": {
+        "observation.images.image": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [256, 256, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "Primary slot (SIMPLER/Bridge external 3rd-person view)."
+        },
+        "observation.images.wrist_image": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "padding": true,
+            "shape": [256, 256, 3],
+            "names": ["height", "width", "channel"],
+            "comment": "Synthetic masked pad: WidowX/SIMPLER provides only one camera, so the preprocessor zero-pads this slot. Not used for matching."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "Task instruction (language conditioning); required by the VLA."
+        },
+        "observation.state.eef_pos": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["eef_pos.x", "eef_pos.y", "eef_pos.z"],
+            "normalization": "identity",
+            "comment": "Absolute eef position, base frame."
+        },
+        "observation.state.eef_rot": {
+            "role": "observation",
+            "state_type": "EE_ABS_ROT",
+            "state_representation": "AXISANGLE",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["eef_axis_angle.rx", "eef_axis_angle.ry", "eef_axis_angle.rz"],
+            "normalization": "identity",
+            "comment": "Absolute eef orientation, axis-angle, base frame."
+        },
+        "observation.state.gripper": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [2],
+            "order": "6-7",
+            "names": ["gripper.qpos1", "gripper.qpos2"],
+            "normalization": "identity",
+            "comment": "Parallel-gripper finger joint positions (2 DOF)."
+        },
+        "action.eef_pos": {
+            "role": "action",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["target_eef_pos.x", "target_eef_pos.y", "target_eef_pos.z"],
+            "normalization": "identity",
+            "comment": "Absolute eef target position, base frame."
+        },
+        "action.eef_rot": {
+            "role": "action",
+            "state_type": "EE_ABS_ROT",
+            "state_representation": "EULXYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["target_eef_euler.rx", "target_eef_euler.ry", "target_eef_euler.rz"],
+            "normalization": "identity",
+            "comment": "Absolute eef target orientation, euler-XYZ, base frame. The euler_widowx adapter adds a fixed [0, pi/2, 0] EE->base alignment offset (X-VLA authors' SimplerEnv eval client)."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "NORM11",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["gripper.open_close"],
+            "limits": {"min": [-1.0], "max": [1.0]},
+            "normalization": "min_max",
+            "comment": "Gripper open/close, thresholded to {+1 close (<0.7), -1 open}."
+        }
+    },
+    "comment": "X-VLA finetuned for SIMPLER WidowX 250s / Bridge (6-DoF arm), checkpoint lerobot/xvla-widowx (domain_id baked into the finetune; base generalist uses widowx-air=4, bridge=0). The real native output is a 20-dim two-arm ee6d_abs target; the euler_widowx adapter (demos/benchmarks/agents/xvla.py) reduces arm0 to this 7-dim absolute base-pose action: rot6d -> euler-XYZ + [0,pi/2,0] offset, gripper thresholded at 0.7. Pairs with the absolute-control WidowX env (env_server.py --control absolute). OPEN: control_rate 5 Hz assumed from SIMPLER WidowX; the delta-action widowx.json env contract is the OSC variant, not this absolute pairing. Full 20-dim native form lives in contracts/experiments/xvla.json."
+}

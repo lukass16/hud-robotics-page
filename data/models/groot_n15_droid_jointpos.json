@@ -1,0 +1,129 @@
+{
+    "model": "groot_n15",
+    "policy_class": "GR00TPolicy",
+    "checkpoint": "nvidia/GR00T-N1.5-3B",
+    "robot_type": "franka_panda_droid",
+    "robot_class": "arm7g1",
+    "chunk_size": 16,
+    "control_rate": 15,
+    "robot_type_variables": {
+        "franka_panda_droid": {"embodiment_tag": "gr1"}
+    },
+    "decision_variables": {
+        "embodiment_tag": "GR00T EmbodimentTag selecting modality.json + norm stats (DROID Franka uses gr1 / new_embodiment finetunes)."
+    },
+    "features": {
+        "observation.images.exterior_image_1_left": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [180, 320, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "DROID over-shoulder-left; resized to 180x320 (GR00T default)."
+        },
+        "observation.images.wrist_image_left": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [180, 320, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "DROID wrist_cam."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "annotation.language.language_instruction (+ optional duplicates)."
+        },
+        "observation.state.eef_position": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["state.eef_position.x", "state.eef_position.y", "state.eef_position.z"],
+            "normalization": "mean_std",
+            "comment": "EE position in modality.json; may be sin_cos wrapped for radians in finetune."
+        },
+        "observation.state.eef_rotation": {
+            "role": "observation",
+            "state_type": "EE_ABS_ROT",
+            "state_representation": "EULXYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["state.eef_rotation.roll", "state.eef_rotation.pitch", "state.eef_rotation.yaw"],
+            "normalization": "mean_std",
+            "comment": "EE euler XYZ from wxyz quat at bridge (RoboLab client)."
+        },
+        "observation.state.joint_position": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [7],
+            "order": "6-12",
+            "names": [
+                "state.joint_position.j1", "state.joint_position.j2", "state.joint_position.j3",
+                "state.joint_position.j4", "state.joint_position.j5", "state.joint_position.j6",
+                "state.joint_position.j7"
+            ],
+            "normalization": "mean_std",
+            "comment": "7 arm joint positions (rad)."
+        },
+        "observation.state.gripper_position": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "13",
+            "names": ["state.gripper_position"],
+            "normalization": "mean_std",
+            "comment": "Scalar gripper opening."
+        },
+        "action.joint_position": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [7],
+            "order": "0-6",
+            "names": [
+                "action.joint_position.j1", "action.joint_position.j2", "action.joint_position.j3",
+                "action.joint_position.j4", "action.joint_position.j5", "action.joint_position.j6",
+                "action.joint_position.j7"
+            ],
+            "normalization": "mean_std",
+            "comment": "Absolute joint targets; horizon 16 in default GR00T ActionConfig."
+        },
+        "action.gripper_position": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "NORM01",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "7",
+            "names": ["action.gripper_position"],
+            "limits": {"min": [0.0], "max": [1.0]},
+            "normalization": "mean_std",
+            "comment": "Gripper target; binarized >0.5 at deploy (RoboLab client)."
+        }
+    },
+    "comment": "GR00T N1.5 DROID Franka joint-position policy (8-DoF action, 16-step chunk). Modality keys match Isaac-GR00T LeRobot layout. Pairs franka_panda_droid env."
+}

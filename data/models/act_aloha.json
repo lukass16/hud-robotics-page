@@ -1,0 +1,114 @@
+{
+    "model": "act_aloha",
+    "policy_class": "ACTPolicy",
+    "checkpoint": "tonyzhaozh/act",
+    "robot_type": "aloha_bimanual",
+    "robot_class": "bimanual6g1",
+    "chunk_size": 90,
+    "control_rate": 50,
+    "robot_type_variables": {
+        "aloha_bimanual": {}
+    },
+    "decision_variables": {},
+    "features": {
+        "observation.images.cam_high": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [480, 640, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "Overhead cam_high; ACT also uses L/R wrist cams (not in minimal env spec)."
+        },
+        "observation.images.cam_left_wrist": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [480, 640, 3],
+            "names": ["height", "width", "channel"],
+            "padding": true,
+            "normalization": "identity",
+            "comment": "Left wrist pad if env lacks view."
+        },
+        "observation.images.cam_right_wrist": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "HWC",
+            "shape": [480, 640, 3],
+            "names": ["height", "width", "channel"],
+            "padding": true,
+            "normalization": "identity",
+            "comment": "Right wrist pad if env lacks view."
+        },
+        "observation.state.qpos": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [14],
+            "order": "0-13",
+            "names": [
+                "left_arm.joint1", "left_arm.joint2", "left_arm.joint3", "left_arm.joint4", "left_arm.joint5", "left_arm.joint6",
+                "left_gripper",
+                "right_arm.joint1", "right_arm.joint2", "right_arm.joint3", "right_arm.joint4", "right_arm.joint5", "right_arm.joint6",
+                "right_gripper"
+            ],
+            "normalization": "mean_std",
+            "comment": "Current joint positions (14-DoF) fed to CVAE encoder at inference."
+        },
+        "action.left_arm": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [6],
+            "order": "0-5",
+            "names": ["left_arm.joint1", "left_arm.joint2", "left_arm.joint3", "left_arm.joint4", "left_arm.joint5", "left_arm.joint6"],
+            "normalization": "mean_std",
+            "comment": "Target joint positions for next k=90 steps (chunk); L1-trained absolute qpos."
+        },
+        "action.left_gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["left_gripper"],
+            "normalization": "mean_std",
+            "comment": "Left gripper absolute target."
+        },
+        "action.right_arm": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [6],
+            "order": "7-12",
+            "names": ["right_arm.joint1", "right_arm.joint2", "right_arm.joint3", "right_arm.joint4", "right_arm.joint5", "right_arm.joint6"],
+            "normalization": "mean_std",
+            "comment": "Right arm absolute joint targets."
+        },
+        "action.right_gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "13",
+            "names": ["right_gripper"],
+            "normalization": "mean_std",
+            "comment": "Right gripper absolute target."
+        }
+    },
+    "comment": "ACT (Action Chunking with Transformers) on real ALOHA: 14-DoF absolute joint-position chunks (k=90), 50 Hz. Pairs aloha_bimanual env."
+}

@@ -1,0 +1,95 @@
+{
+    "model": "pi0fast_droid",
+    "policy_class": "PI0FASTPolicy",
+    "checkpoint": "gs://openpi-assets/checkpoints/pi0_fast_droid",
+    "trained_on": "DROID (openpi)",
+    "robot_type": "droid_franka_robotiq",
+    "robot_class": "arm7g1",
+    "chunk_size": 10,
+    "control_rate": 15,
+    "robot_type_variables": {
+        "droid_franka_robotiq": {}
+    },
+    "decision_variables": {},
+    "features": {
+        "observation.images.base_0_rgb": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "CHW",
+            "shape": [3, 224, 224],
+            "names": ["channel", "height", "width"],
+            "normalization": "identity",
+            "comment": "Primary/exterior camera slot. float32 [0,1] CHW; the agent maps the env's exterior_image here and resizes to 224."
+        },
+        "observation.images.left_wrist_0_rgb": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "CHW",
+            "shape": [3, 224, 224],
+            "names": ["channel", "height", "width"],
+            "normalization": "identity",
+            "comment": "Wrist camera slot; the env's wrist_image maps here."
+        },
+        "observation.images.right_wrist_0_rgb": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "CHW",
+            "shape": [3, 224, 224],
+            "names": ["channel", "height", "width"],
+            "normalization": "identity",
+            "comment": "Second wrist slot (DROID has two wrist cams); the single-arm RoboLab env has no match, so the agent zero-fills it."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "Task instruction (language conditioning); required by the VLA. FAST/autoregressive decoding makes pi0-FAST notably more language-steerable than the flow-matching pi0-DROID."
+        },
+        "observation.state": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [32],
+            "order": "0-31",
+            "names": [
+                "panda_joint1", "panda_joint2", "panda_joint3", "panda_joint4",
+                "panda_joint5", "panda_joint6", "panda_joint7", "gripper.opening"
+            ],
+            "normalization": "quantiles",
+            "comment": "DROID joint-space proprio: active dims 0-6 = 7 Panda arm joint positions (rad), dim 7 = gripper opening; dims 8-31 are zero padding (paligemma backbone max_state_dim=32). QUANTILE-normalized. Joint proprio matches the RoboLab DROID env's joint state (the agent zero-pads the env's 8-dim state to 32)."
+        },
+        "action.arm_joint_vel": {
+            "role": "action",
+            "state_type": "JOINT_VEL",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad/s",
+            "shape": [7],
+            "order": "0-6",
+            "names": [
+                "panda_joint1", "panda_joint2", "panda_joint3", "panda_joint4",
+                "panda_joint5", "panda_joint6", "panda_joint7"
+            ],
+            "normalization": "quantiles",
+            "comment": "7 Panda arm joint VELOCITY targets (the openpi DROID action space, same as pi05_droid). The decoded action chunk is 8-DoF (7 joint vel + gripper); pairs with the env's joint_vel branch (envs/droid_joint_vel.json, JointVelocityActionCfg). OPEN: newer openpi DROID training recommends joint-POSITION actions for sim compatibility -- if a joint-pos pi0-FAST-DROID is used instead, switch to JOINT_ABS_POS and pair envs/droid_joint_pos.json."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "NORM01",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "7",
+            "names": ["gripper.open_close"],
+            "normalization": "quantiles",
+            "comment": "Absolute gripper command in [0,1] (action dim 7); the agent clips to NORM01 and the env's binary gripper closes when >0.5."
+        }
+    },
+    "comment": "pi0-FAST DROID: the autoregressive, FAST-tokenized variant of pi0 finetuned on DROID, paired with the RoboLab (Isaac Lab) DROID env (droid_franka_robotiq), ~15 Hz, pure eval / no finetuning. Verified checkpoint: openpi gs://openpi-assets/checkpoints/pi0_fast_droid (config pi0_fast_droid; an s3://openpi-assets/... mirror also exists). This is the RoboArena DROID FAST baseline and the canonical *inference* FAST checkpoint. ARCHITECTURE vs pi05_droid (flow matching): pi0-FAST is paligemma + an autoregressive action head over FAST tokens (Frequency-space Action Sequence Tokenization = per-chunk DCT + BPE over QUANTILE-normalized actions, vocab ~1024). Actions are decoded one FAST token at a time then de-tokenized back to a continuous chunk, so inference is slower than pi0/pi0.5 flow matching but follows language better. I/O mirrors pi05_droid: 3 camera slots (base + 2 wrist; the single-arm RoboLab env fills base<-exterior, left_wrist<-wrist, right_wrist zero-padded) + 32-dim padded JOINT proprio (active 8: 7 joint pos + gripper); output is an 8-DoF action chunk = 7 arm joint VELOCITIES + absolute gripper. OPEN (policy_class/loader): the JAX/openpi original is preferred over the LeRobot port for DROID (per the research report) -- to load it natively use openpi (policy.config=pi0_fast_droid). The LeRobot equivalent class is PI0FASTPolicy (policy.type=pi0_fast, action tokenizer lerobot/fast-action-tokenizer), but no verified LeRobot DROID port exists (LeRobot ships only lerobot/pi0fast-base and lerobot/pi0fast-libero, the latter known to underperform the JAX original); if a LeRobot DROID port surfaces, set checkpoint to its repo id. OPEN (chunk_size): set to 10 (LeRobot pi0-FAST default action_horizon; FAST paper DROID @15 Hz); openpi pi0_fast_droid may predict up to ~15-16 and execute a shorter open-loop horizon -- verify the loaded config's action_horizon at wire-up."
+}

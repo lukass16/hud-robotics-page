@@ -1,0 +1,162 @@
+{
+    "robot_type": "sawyer_metaworld_mt1",
+    "robot_class": "arm7g1",
+    "control_rate": 20,
+    "features": {
+        "observation.state.obs_t_eef_pos": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "world",
+            "dtype": "float64",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["obs_t.eef.x", "obs_t.eef.y", "obs_t.eef.z"],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Current-step hand position (Meta-World flat obs dims 0-2)."
+        },
+        "observation.state.obs_t_gripper": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float64",
+            "units": "none",
+            "shape": [1],
+            "order": "3",
+            "names": ["obs_t.gripper"],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Current-step gripper finger position."
+        },
+        "observation.state.obs_t_obj0": {
+            "role": "observation",
+            "state_type": "EE_ABS_POSE",
+            "state_representation": "XYZ_QUATXYZW",
+            "frame": "world",
+            "dtype": "float64",
+            "units": "m",
+            "shape": [7],
+            "order": "4-10",
+            "names": [
+                "obs_t.obj0.x", "obs_t.obj0.y", "obs_t.obj0.z",
+                "obs_t.obj0.qx", "obs_t.obj0.qy", "obs_t.obj0.qz", "obs_t.obj0.qw"
+            ],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Object 0 pose (pos + quat xyzw)."
+        },
+        "observation.state.obs_t_obj1": {
+            "role": "observation",
+            "state_type": "EE_ABS_POSE",
+            "state_representation": "XYZ_QUATXYZW",
+            "frame": "world",
+            "dtype": "float64",
+            "units": "m",
+            "shape": [7],
+            "order": "11-17",
+            "names": [
+                "obs_t.obj1.x", "obs_t.obj1.y", "obs_t.obj1.z",
+                "obs_t.obj1.qx", "obs_t.obj1.qy", "obs_t.obj1.qz", "obs_t.obj1.qw"
+            ],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Object 1 pose (pos + quat xyzw)."
+        },
+        "observation.state.obs_tm1_eef_pos": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "world",
+            "dtype": "float64",
+            "units": "m",
+            "shape": [3],
+            "order": "18-20",
+            "names": ["obs_tm1.eef.x", "obs_tm1.eef.y", "obs_tm1.eef.z"],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Previous-step hand position."
+        },
+        "observation.state.obs_tm1_gripper": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float64",
+            "units": "none",
+            "shape": [1],
+            "order": "21",
+            "names": ["obs_tm1.gripper"],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Previous-step gripper finger position."
+        },
+        "observation.state.obs_tm1_obj0": {
+            "role": "observation",
+            "state_type": "EE_ABS_POSE",
+            "state_representation": "XYZ_QUATXYZW",
+            "frame": "world",
+            "dtype": "float64",
+            "units": "m",
+            "shape": [7],
+            "order": "22-28",
+            "names": [
+                "obs_tm1.obj0.x", "obs_tm1.obj0.y", "obs_tm1.obj0.z",
+                "obs_tm1.obj0.qx", "obs_tm1.obj0.qy", "obs_tm1.obj0.qz", "obs_tm1.obj0.qw"
+            ],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Previous-step object 0 pose."
+        },
+        "observation.state.obs_tm1_obj1": {
+            "role": "observation",
+            "state_type": "EE_ABS_POSE",
+            "state_representation": "XYZ_QUATXYZW",
+            "frame": "world",
+            "dtype": "float64",
+            "units": "m",
+            "shape": [7],
+            "order": "29-35",
+            "names": [
+                "obs_tm1.obj1.x", "obs_tm1.obj1.y", "obs_tm1.obj1.z",
+                "obs_tm1.obj1.qx", "obs_tm1.obj1.qy", "obs_tm1.obj1.qz", "obs_tm1.obj1.qw"
+            ],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Previous-step object 1 pose."
+        },
+        "observation.state.goal_pos": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "world",
+            "dtype": "float64",
+            "units": "m",
+            "shape": [3],
+            "order": "36-38",
+            "names": ["goal.x", "goal.y", "goal.z"],
+            "stats": {"mean": [], "std": [], "min": [], "max": []},
+            "comment": "Goal position (goal-conditioned MT1)."
+        },
+        "action.delta_hand_pos": {
+            "role": "action",
+            "state_type": "EE_DEL_POS",
+            "state_representation": "XYZ",
+            "frame": "world",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["delta_hand_pos.dx", "delta_hand_pos.dy", "delta_hand_pos.dz"],
+            "limits": {"min": [-1.0, -1.0, -1.0], "max": [1.0, 1.0, 1.0]},
+            "stats": {"mean": [], "std": [], "min": [-1.0, -1.0, -1.0], "max": [1.0, 1.0, 1.0]},
+            "comment": "Desired hand displacement (first 3 of 4-tuple action)."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "3",
+            "names": ["gripper.finger_pos"],
+            "limits": {"min": [-1.0], "max": [1.0]},
+            "stats": {"mean": [], "std": [], "min": [-1.0], "max": [1.0]},
+            "comment": "Gripper finger position command (4th action dim)."
+        }
+    },
+    "comment": "Meta-World MT1 reach-v3 (Sawyer), Gymnasium API. 4-dim action, 39-dim goal-conditioned observation split per quantity (order 0-38). frame_skip=5."
+}
