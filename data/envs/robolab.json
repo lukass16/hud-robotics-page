@@ -9,26 +9,26 @@
             "type": "rgb",
             "dtype": "uint8",
             "state_representation": "HWC",
-            "shape": [256, 256, 3],
+            "shape": [360, 640, 3],
             "names": ["height", "width", "channel"],
             "stats": {"min": [[[0]], [[0]], [[0]]], "max": [[[255]], [[255]], [[255]]]},
-            "comment": "Exterior scene view (over_shoulder_left camera). uint8 HWC; exterior view first by camera-order convention. Downscaled to 256x256 by the sim bridge."
+            "comment": "DROID exterior camera (over_shoulder_left); third-person scene view, first by camera-order convention (the policy's primary/exterior slot). Native 720x1280, aspect-preserving downscaled by the bridge (long edge capped at 640, NO square squash) so the policy's resize_with_pad to 224 stays distortion-free. Shape is advisory (the agent reads the real array shape)."
         },
         "observation.images.wrist_image": {
             "role": "observation",
             "type": "rgb",
             "dtype": "uint8",
             "state_representation": "HWC",
-            "shape": [256, 256, 3],
+            "shape": [360, 640, 3],
             "names": ["height", "width", "channel"],
             "stats": {"min": [[[0]], [[0]], [[0]]], "max": [[[255]], [[255]], [[255]]]},
-            "comment": "Wrist view (Robotiq base_link/wrist_cam, focal 2.8). Native 720x1280, resized to 256x256."
+            "comment": "DROID wrist camera (Robotiq base_link/wrist_cam, focal 2.8 — calibrated to pi05/DreamZero). Native 720x1280, aspect-preserving downscaled (long edge capped at 640, NO square squash); the policy resize_with_pads to 224."
         },
         "observation.text": {
             "role": "observation",
             "type": "language",
             "dtype": "string",
-            "comment": "Task instruction (default/vague/specific variant chosen at launch)."
+            "comment": "Task instruction. RoboLab tasks define default/vague/specific variants; the variant is chosen per episode (instruction_type) by the harness."
         },
         "observation.state.arm_joint_pos": {
             "role": "observation",
@@ -46,7 +46,7 @@
                 "min": [-2.8973, -1.7628, -2.8973, -3.0718, -2.8973, -0.0175, -2.8973],
                 "max": [2.8973, 1.7628, 2.8973, -0.0698, 2.8973, 3.7525, 2.8973]
             },
-            "comment": "Absolute Panda arm joint positions (RoboLab ProprioceptionObservationCfg arm_joint_pos)."
+            "comment": "Absolute Panda arm joint positions (RoboLab ProprioceptionObservationCfg arm_joint_pos). Elems 0-6 of the env's concatenated 8-dim 'state'."
         },
         "observation.state.gripper": {
             "role": "observation",
@@ -58,7 +58,7 @@
             "order": "7",
             "names": ["gripper.opening"],
             "limits": {"min": [0.0], "max": [1.0]},
-            "comment": "Gripper opening, 0=open / 1=closed (finger_joint rescaled by pi/4)."
+            "comment": "Gripper opening (RoboLab gripper_pos), 0=open / 1=closed. Elem 7 of the env's 'state'; kept out of JOINT so its token never collides with an arm joint."
         },
         "action.arm_joint_pos": {
             "role": "action",
@@ -76,7 +76,7 @@
                 "min": [-2.8973, -1.7628, -2.8973, -3.0718, -2.8973, -0.0175, -2.8973],
                 "max": [2.8973, 1.7628, 2.8973, -0.0698, 2.8973, 3.7525, 2.8973]
             },
-            "comment": "Absolute Panda joint position targets (RoboLab DroidJointPositionActionCfg, preserve_order). The native DROID action."
+            "comment": "Absolute Panda joint position targets (RoboLab DroidJointPositionActionCfg). The native DROID action; pairs with the DROID pi0.5 joint-position policy (openpi pi05_droid_jointpos / lerobot DAVIAN-Robotics/pi05_droid_jointpos)."
         },
         "action.gripper": {
             "role": "action",
@@ -88,8 +88,8 @@
             "order": "7",
             "names": ["gripper.open_close"],
             "limits": {"min": [0.0], "max": [1.0]},
-            "comment": "Binary gripper: >0.5 closes (finger_joint -> pi/4), else opens (-> 0). ABSOLUTE (arm is absolute too)."
+            "comment": "Binary gripper: >0.5 closes (finger_joint -> pi/4), else opens (-> 0). ABSOLUTE (arm is absolute too). state_representation NORM01 with a binary threshold at runtime."
         }
     },
-    "comment": "RoboLab (NVIDIA Isaac Lab) DROID env in its native joint-position configuration (env_server.py --control joint_pos / DroidJointPositionActionCfg): Franka Panda (7-DoF) + Robotiq 2F-85, ~15 Hz (sim dt 1/120, decimation 8). Action is 8-DoF: 7 absolute Panda joint targets + binary gripper. The env splits state/action into per-quantity features that 'order' reassembles. Two policy cameras (over_shoulder_left exterior + wrist). No env-side normalization (limits only); normalization is policy-side. Sibling configs are launch-selectable control modes of the same embodiment: joint_vel (droid_joint_vel.json, the official DROID pi0.5 pairing) plus ee_abs / ee_del differential-IK branches (see contracts/experiments/droid.json)."
+    "comment": "RoboLab (NVIDIA Isaac Lab, backend=isaaclab) DROID env in its native joint-position configuration (envs/robolab/env_server.py --control joint_pos / DroidJointPositionActionCfg): Franka Panda (7-DoF, arm7g1) + Robotiq 2F-85, ~15 Hz (sim dt 1/120, decimation 8). Action is 8-DoF: 7 absolute Panda joint targets + binary gripper; the env's concatenated 8-dim 'state' and action are split into per-quantity features that 'order' reassembles. Two policy cameras (over_shoulder_left exterior + Robotiq wrist), emitted as aspect-preserving uint8 HWC RGB (long edge capped at 640 — NOT square-squashed, unlike the generic 256x256 droid_*.json templates), so the policy's resize_with_pad to 224 is distortion-free. No env-side normalization (limits only); normalization is policy-side. The env exposes a single parametrized task 'robolab' covering all 120 RoboLab benchmark tasks (task_name/seed/instruction_type are variant args). The exact wire artifact this mirrors lives at envs/robolab/robolab.json (raw schema + action_modes). Sibling launch-selectable control modes of the same embodiment: ee_abs (DroidIKActionCfg, absolute differential IK) and ee_del (DroidRelIKActionCfg, relative differential IK), preserved in contracts/experiments/droid.json; the velocity pairing is droid_joint_vel.json."
 }

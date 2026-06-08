@@ -30,7 +30,7 @@
         },
         "observation.state.left_gripper": {
             "role": "observation",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "REAL",
             "dtype": "float32",
             "units": "none",
@@ -54,7 +54,7 @@
         },
         "observation.state.right_gripper": {
             "role": "observation",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "REAL",
             "dtype": "float32",
             "units": "none",
@@ -78,7 +78,7 @@
         },
         "action.left_gripper": {
             "role": "action",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "REAL",
             "dtype": "float32",
             "units": "none",
@@ -102,7 +102,7 @@
         },
         "action.right_gripper": {
             "role": "action",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "REAL",
             "dtype": "float32",
             "units": "none",
@@ -113,5 +113,5 @@
             "comment": "Right gripper position target."
         }
     },
-    "comment": "Bimanual ALOHA (2x 6-DoF + grippers, 14 DoF), 50 Hz. ACTION = JOINT_ABS_POS (real ALOHA/ACT space; sim wrappers may expose EE-delta). Side via key+order (L arm 0-5, L grip 6, R arm 7-12, R grip 13). Negative case (no model pairs). Stats unavailable."
+    "comment": "Bimanual ALOHA (2x 6-DoF + grippers, 14 DoF), 50 Hz. ACTION = per-arm JOINT_ABS_POS + per-gripper GRIPPER_ABS_POS (real ALOHA/ACT space; sim wrappers may expose EE-delta). Side via key+order (L arm 0-5, L grip 6, R arm 7-12, R grip 13). Negative case (no model pairs). Stats unavailable."
 }

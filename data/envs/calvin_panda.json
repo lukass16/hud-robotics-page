@@ -57,7 +57,7 @@
         },
         "observation.state.gripper_width": {
             "role": "observation",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "REAL",
             "dtype": "float32",
             "units": "m",
@@ -84,7 +84,7 @@
         },
         "observation.state.gripper_action_state": {
             "role": "observation",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "NORM11",
             "dtype": "float32",
             "units": "none",
@@ -125,7 +125,7 @@
         },
         "action.gripper": {
             "role": "action",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "NORM11",
             "dtype": "float32",
             "units": "none",

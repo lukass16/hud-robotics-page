@@ -75,7 +75,7 @@
         },
         "action.left_gripper": {
             "role": "action",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "REAL",
             "dtype": "float32",
             "units": "none",
@@ -99,7 +99,7 @@
         },
         "action.right_gripper": {
             "role": "action",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "REAL",
             "dtype": "float32",
             "units": "none",

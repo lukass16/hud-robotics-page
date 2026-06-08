@@ -31,7 +31,10 @@ export const FACETS: FacetDef[] = [
     id: "actionSpace",
     label: "Action space",
     hint: "Coarse action space: JOINT / EE / BASE",
-    values: (r) => r.actionSpaces,
+    // GRIPPER is intentionally excluded: nearly every contract has a gripper
+    // action, so it isn't discriminative. Moving it out of JOINT (see the
+    // GRIPPER_ABS_POS state_type) is what makes the JOINT filter selective.
+    values: (r) => r.actionSpaces.filter((s) => s !== "GRIPPER"),
   },
   {
     id: "actionStateType",

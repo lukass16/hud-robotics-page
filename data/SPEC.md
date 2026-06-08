@@ -102,7 +102,7 @@ Uppercase, underscore-joined, three slots:
 
 | Slot         | Set                                                                | Meaning                                                           |
 | ------------ | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| **SPACE**    | `JOINT`, `EE`, `BASE`                                              | per-actuator DOFs · end-effector/cartesian · mobile/floating base |
+| **SPACE**    | `JOINT`, `GRIPPER`, `EE`, `BASE`                                  | per-actuator DOFs · gripper aperture · end-effector/cartesian · mobile/floating base |
 | **REF**      | `ABS`, `DEL`                                                       | absolute · delta                                                  |
 | **QUANTITY** | `POS`, `POSE`, `ROT`, `VEL`, `ROTVEL`, `TWIST`, `EFF`, `PD`, `ACC` | see below                                                         |
 
@@ -118,7 +118,16 @@ Quantities pair 0th-order with 1st-order:
 
 Plus `EFF` (force/torque/effort, unified), `PD` (PD/impedance target), `ACC`
 (acceleration). Examples: `EE_ABS_POS`, `EE_DEL_ROT`, `JOINT_ABS_POS`,
-`EE_ABS_TWIST`, `BASE_DEL_POSE`.
+`GRIPPER_ABS_POS`, `EE_ABS_TWIST`, `BASE_DEL_POSE`.
+
+**`GRIPPER`** is the parallel-jaw end-effector aperture as a first-class space
+(almost always `GRIPPER_ABS_POS`). Keep the gripper out of `JOINT` so its
+`state_type` token never collides with an arm joint — a shared `JOINT_ABS_POS` token
+pollutes the action signature used for matching/filtering (e.g. an EE-space arm with
+a gripper would otherwise read as if it had a joint-space component). A raw
+multi-joint `qpos` vector that already bundles finger joints with the arm stays one
+`JOINT_*` feature; dexterous multi-DoF hands also stay `JOINT`. The gripper carries
+no `frame`.
 
 ### 3.7 `state_representation`
 
@@ -134,7 +143,7 @@ How the numbers encode geometry. Pick by quantity:
 | `ROTVEL`                         | `OMEGAXYZ`, `EULXYZRATE`, `EULZYXRATE`                                             |
 | `TWIST`                          | composite `<linvel>_<angvel>`: `XYZRATE_OMEGAXYZ` (standard), `XYZRATE_EULXYZRATE` |
 | `EFF` / `PD` / `ACC`             | `REAL` (joint) · `XYZ`-style (cartesian)                                           |
-| gripper (under `JOINT`)          | `BINARY` (open/closed), `NORM01` ([0,1]), `NORM11` ([-1,1])                        |
+| gripper (under `GRIPPER`)        | `BINARY` (open/closed), `NORM01` ([0,1]), `NORM11` ([-1,1]), `REAL` (width m / finger rad) |
 | any plain scalar / dimensionless | `REAL`                                                                             |
 
 
@@ -284,10 +293,14 @@ These come from explicit design decisions; follow them for consistency.
 7. `**frame` is per-feature and EE-only,** and may differ within one pose (OSC:
   base-frame translation, eef-frame rotation). *Why:* this is the #1 silent-failure
    source; making it explicit per sub-feature catches it.
-8. **Gripper folds into `JOINT`** (`JOINT_ABS_POS`) and is disambiguated by
-  `state_representation` (`BINARY`/`NORM01`/`NORM11`). Note: the gripper is often
+8. **Gripper is its own space (`GRIPPER`)** — e.g. `GRIPPER_ABS_POS`, disambiguated by
+  `state_representation` (`BINARY`/`NORM01`/`NORM11`/`REAL`). Keep it out of `JOINT`
+   so a gripper never shares a `state_type` token with an arm joint (which otherwise
+   pollutes the action signature used for matching/filtering). The gripper is usually
    **absolute even when the arm is delta** — splitting per-feature expresses this
-   cleanly.
+   cleanly. *Exception:* a raw multi-joint `qpos` vector that already bundles finger
+   joints with arm joints stays a single `JOINT_*` feature; use `GRIPPER` only for a
+   standalone gripper feature. Dexterous multi-DoF hands remain `JOINT`.
 9. `**kp`/`kd` on both sides;** `limits` distinct from `stats` (hard bound vs observed
   distribution); `chunk_size` top-level on the model.
 10. `**decision_variables` defines the schema;** every `robot_type_variables` entry

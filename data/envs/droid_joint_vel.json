@@ -46,7 +46,7 @@
         },
         "observation.state.gripper": {
             "role": "observation",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "NORM01",
             "dtype": "float32",
             "units": "none",
@@ -75,7 +75,7 @@
         },
         "action.gripper": {
             "role": "action",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "NORM01",
             "dtype": "float32",
             "units": "none",
@@ -86,5 +86,5 @@
             "comment": "Binary gripper: >0.5 closes (finger_joint -> pi/4), else opens."
         }
     },
-    "comment": "RoboLab DROID env in its joint-velocity configuration (env_server.py --control joint_vel): same embodiment/observations as droid.json, but the action is 7 arm joint velocities + binary gripper. This is the artifact that pairs with the official DROID pi0.5 (lerobot/pi05_droid): action signature JOINT_VEL+JOINT_ABS_POS matches, AND the joint-space proprio matches the model's joint-state input. For the env's native joint-position action see droid.json."
+    "comment": "RoboLab DROID env in its joint-velocity configuration (env_server.py --control joint_vel): same embodiment/observations as droid.json, but the action is 7 arm joint velocities + binary gripper. This is the artifact that pairs with the official DROID pi0.5 (lerobot/pi05_droid): action signature JOINT_VEL+GRIPPER_ABS_POS matches, AND the joint-space proprio matches the model's joint-state input. For the env's native joint-position action see droid_joint_pos.json."
 }

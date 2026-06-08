@@ -3,6 +3,7 @@
 import { loadDataset } from "../lib/contracts";
 import {
   FACETS,
+  FACET_BY_ID,
   filterRows,
   initialFilterState,
   type FilterState,
@@ -20,7 +21,7 @@ function check(name: string, cond: boolean, detail?: string) {
 }
 
 console.log(`Loaded ${data.envs.length} envs, ${data.models.length} models`);
-check("12 envs", data.envs.length === 12);
+check("13 envs", data.envs.length === 13);
 check("14 models", data.models.length === 14);
 
 // Helper to set one facet.
@@ -73,18 +74,32 @@ function withFacet(
 }
 
 // 4) Action space coarse filter (JOINT) returns only joint-action contracts.
+//    GRIPPER must NOT be an offered option (non-discriminative), and an EE-only
+//    action contract (e.g. libero) must not match JOINT now that the gripper
+//    lives in its own GRIPPER space.
 {
+  const spaceFacet = FACET_BY_ID.actionSpace;
+  const opts = new Set<string>();
+  for (const r of [...data.envs, ...data.models])
+    spaceFacet.values(r).forEach((v) => opts.add(v));
+  console.log(`\nAction space options: ${Array.from(opts).sort().join(", ")}`);
+  check("GRIPPER is not an Action space option", !opts.has("GRIPPER"));
+
   const f = withFacet("actionSpace", ["JOINT"], "both");
   const envs = filterRows(data.envs, "env", f, "");
   const models = filterRows(data.models, "model", f, "");
-  console.log(`\n[actionSpace=JOINT, both] envs=${envs.length} models=${models.length}`);
+  console.log(`[actionSpace=JOINT, both] envs=${envs.length} models=${models.length}`);
   check(
     "all JOINT-filtered envs have a JOINT action space",
     envs.every((e) => e.actionSpaces.includes("JOINT"))
   );
   check(
-    "all JOINT-filtered models have a JOINT action space",
-    models.every((m) => m.actionSpaces.includes("JOINT"))
+    "JOINT is now discriminative (does not match all envs)",
+    envs.length < data.envs.length
+  );
+  check(
+    "EE-action env 'libero' is NOT matched by JOINT",
+    !envs.some((e) => e.id === "libero")
   );
 }
 

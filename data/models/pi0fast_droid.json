@@ -80,7 +80,7 @@
         },
         "action.gripper": {
             "role": "action",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "NORM01",
             "dtype": "float32",
             "units": "none",

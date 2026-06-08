@@ -79,7 +79,7 @@
         },
         "observation.state.robot0_gripper_qpos": {
             "role": "observation",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "REAL",
             "dtype": "float32",
             "units": "m",
@@ -137,7 +137,7 @@
         },
         "action.gripper": {
             "role": "action",
-            "state_type": "JOINT_ABS_POS",
+            "state_type": "GRIPPER_ABS_POS",
             "state_representation": "NORM11",
             "dtype": "float32",
             "units": "none",
