@@ -7,10 +7,6 @@
     "robot_class": "arm7g1",
     "chunk_size": 15,
     "control_rate": 15,
-    "robot_type_variables": {
-        "droid_franka_robotiq": {}
-    },
-    "decision_variables": {},
     "features": {
         "observation.images.base_0_rgb": {
             "role": "observation",

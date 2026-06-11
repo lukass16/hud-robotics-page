@@ -1,43 +1,49 @@
 {
     "model": "xvla_calvin",
-    "policy_class": "XVLAPolicy",
+    "policy_class": "XVLA",
     "checkpoint": "2toINF/X-VLA-Calvin-ABC_D",
     "robot_type": "calvin_panda",
     "robot_class": "arm7g1",
-    "chunk_size": 50,
+    "chunk_size": 30,
     "control_rate": 30,
-    "robot_type_variables": {
-        "calvin_panda": {}
-    },
-    "decision_variables": {},
     "features": {
         "observation.images.image": {
             "role": "observation",
             "type": "rgb",
             "dtype": "float32",
             "state_representation": "HWC",
-            "shape": [256, 256, 3],
+            "shape": [224, 224, 3],
             "names": ["height", "width", "channel"],
-            "normalization": "identity",
-            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
-            "comment": "Primary slot (CALVIN rgb_static)."
+            "normalization": "mean_std",
+            "stats": {
+                "mean": [[[0.485]], [[0.456]], [[0.406]]],
+                "std": [[[0.229]], [[0.224]], [[0.225]]],
+                "min": [[[0.0]], [[0.0]], [[0.0]]],
+                "max": [[[1.0]], [[1.0]], [[1.0]]]
+            },
+            "comment": "Primary slot, image0 (CALVIN rgb_static). The checkpoint's XVLAProcessor (CLIPImageProcessor, size 224) accepts any raw RGB view: bicubic resize to 224x224, rescale 1/255, ImageNet mean/std, CHW. A third (empty) view slot is zero-padded and masked."
         },
         "observation.images.wrist_image": {
             "role": "observation",
             "type": "rgb",
             "dtype": "float32",
             "state_representation": "HWC",
-            "shape": [256, 256, 3],
+            "shape": [224, 224, 3],
             "names": ["height", "width", "channel"],
-            "normalization": "identity",
-            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
-            "comment": "Wrist slot (CALVIN rgb_gripper)."
+            "normalization": "mean_std",
+            "stats": {
+                "mean": [[[0.485]], [[0.456]], [[0.406]]],
+                "std": [[[0.229]], [[0.224]], [[0.225]]],
+                "min": [[[0.0]], [[0.0]], [[0.0]]],
+                "max": [[[1.0]], [[1.0]], [[1.0]]]
+            },
+            "comment": "Wrist slot, image1 (CALVIN rgb_gripper, 84x84 upscaled by the processor)."
         },
         "observation.text": {
             "role": "observation",
             "type": "language",
             "dtype": "string",
-            "comment": "Task instruction (language conditioning); required by the VLA."
+            "comment": "Task instruction (language conditioning); BART tokenizer, max length 50."
         },
         "observation.state.tcp_pos": {
             "role": "observation",
@@ -50,32 +56,46 @@
             "order": "0-2",
             "names": ["tcp_pos.x", "tcp_pos.y", "tcp_pos.z"],
             "normalization": "identity",
-            "comment": "TCP position in world frame (robot_obs[0:3])."
+            "comment": "TCP position in world frame. Initialized from robot_obs[0:3] at episode start; on subsequent inferences the official client feeds back the last executed action's arm0 target instead of the env state."
         },
-        "observation.state.tcp_euler": {
+        "observation.state.tcp_rot6d": {
             "role": "observation",
             "state_type": "EE_ABS_ROT",
-            "state_representation": "EULXYZ",
+            "state_representation": "ROT6D",
             "frame": "world",
             "dtype": "float32",
-            "units": "rad",
-            "shape": [3],
-            "order": "3-5",
-            "names": ["tcp_euler.rx", "tcp_euler.ry", "tcp_euler.rz"],
+            "units": "none",
+            "shape": [6],
+            "order": "3-8",
+            "names": ["tcp_rot6d.0", "tcp_rot6d.1", "tcp_rot6d.2", "tcp_rot6d.3", "tcp_rot6d.4", "tcp_rot6d.5"],
             "normalization": "identity",
-            "comment": "TCP orientation as euler XYZ, world frame (robot_obs[3:6])."
+            "comment": "TCP orientation as 6D rotation from robot_obs euler XYZ. Layout is X-VLA's interleaved-column convention: as_matrix()[:, :2].reshape(6) = [r00, r01, r10, r11, r20, r21] (NOT two stacked columns)."
         },
-        "observation.state.gripper_width": {
+        "observation.state.gripper": {
             "role": "observation",
             "state_type": "GRIPPER_ABS_POS",
-            "state_representation": "REAL",
+            "state_representation": "BINARY",
             "dtype": "float32",
-            "units": "m",
+            "units": "none",
             "shape": [1],
-            "order": "6",
-            "names": ["gripper_width"],
+            "order": "9",
+            "names": ["gripper_open"],
             "normalization": "identity",
-            "comment": "Gripper opening width in meters (robot_obs[6]). OPEN: X-VLA training may zero the gripper channel in proprio."
+            "comment": "Binary open indicator (robot_obs[14] > 0). Effectively unused: the ee6d action space zeroes gripper channels (indices 9, 19) in proprio before the forward pass."
+        },
+        "observation.state.arm1_padding": {
+            "role": "observation",
+            "state_type": "EE_ABS_POSE",
+            "state_representation": "XYZ_ROT6D",
+            "frame": "world",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [10],
+            "order": "10-19",
+            "names": ["arm1.pad_0", "arm1.pad_1", "arm1.pad_2", "arm1.pad_3", "arm1.pad_4", "arm1.pad_5", "arm1.pad_6", "arm1.pad_7", "arm1.pad_8", "arm1.pad_9"],
+            "padding": true,
+            "normalization": "identity",
+            "comment": "Second-arm slot of the unified 20-dim ee6d proprio, zero-padded (CALVIN is single-arm). The model additionally right-pads the state to max_state_dim internally."
         },
         "action.rel_tcp_pos": {
             "role": "action",
@@ -89,7 +109,7 @@
             "names": ["rel_tcp_pos.dx", "rel_tcp_pos.dy", "rel_tcp_pos.dz"],
             "limits": {"min": [-1.0, -1.0, -1.0], "max": [1.0, 1.0, 1.0]},
             "normalization": "identity",
-            "comment": "Normalized relative tcp translation; physical scale factor 50 in the CALVIN env."
+            "comment": "CALVIN rel_actions translation, produced by the agent-side calvin_rel adapter: clip((target_pos - tcp_pos) * 50, -1, 1) from the native absolute arm0 target."
         },
         "action.rel_tcp_euler": {
             "role": "action",
@@ -103,7 +123,7 @@
             "names": ["rel_tcp_euler.drx", "rel_tcp_euler.dry", "rel_tcp_euler.drz"],
             "limits": {"min": [-1.0, -1.0, -1.0], "max": [1.0, 1.0, 1.0]},
             "normalization": "identity",
-            "comment": "Normalized relative tcp euler delta; physical scale factor 20 in the CALVIN env."
+            "comment": "CALVIN rel_actions rotation: clip(wrap(target_euler - tcp_euler) * 20, -1, 1), euler XYZ in world frame (target_euler from the native rot6d)."
         },
         "action.gripper": {
             "role": "action",
@@ -116,8 +136,8 @@
             "names": ["gripper_action"],
             "limits": {"min": [-1.0], "max": [1.0]},
             "normalization": "identity",
-            "comment": "Binary gripper: close=-1, open=+1 (absolute in the rel_actions vector)."
+            "comment": "Binary gripper from the native sigmoid channel, official threshold 0.8: open(+1) if raw < 0.8 else close(-1). Absolute even though the arm is delta."
         }
     },
-    "comment": "X-VLA finetuned for CALVIN (Franka on PlayTable, 30 Hz), checkpoint 2toINF/X-VLA-Calvin-ABC_D, domain_id 2. The real native output is a 20-dim two-arm ee6d_abs target; the eval client converts arm0 to CALVIN rel_actions: world-frame normalized cartesian deltas (pos scale 50, rot scale 20 euler-XYZ) + binary gripper. OPEN: the calvin_rel adapter is not yet implemented in demos/benchmarks/agents/xvla.py, and the current agent only pairs with absolute-control envs; this contract specs the intended CALVIN pairing. Full 20-dim native form lives in contracts/experiments/xvla.json."
+    "comment": "X-VLA 0.9B finetuned for CALVIN ABC->D (Franka on PlayTable, 30 Hz), checkpoint 2toINF/X-VLA-Calvin-ABC_D (transformers remote-code XVLA class + XVLAProcessor; no lerobot-format CALVIN checkpoint exists). Soft-prompt domain_id 2, flow-matching with 10 denoising steps, num_actions=30 per inference (chunk_size); the official eval client executes only the first 20 actions of each chunk before re-inferring. The native output is the unified 20-dim two-arm ee6d space (per arm: pos3 + interleaved rot6d6 + sigmoid gripper1); the agent-side calvin_rel adapter (demos/benchmarks/agents/xvla_calvin.py) reduces arm0 to the CALVIN 7-dim rel_actions specced here, pairing with the env's default 'relative' branch. (The official client instead drives calvin_env with the absolute (pos, quat, gripper) tuple — the env's 'absolute' branch supports that form too; the rel reduction re-derives the delta against the live tcp pose each step, an approximation flagged OPEN below.) OPEN: rel reduction vs official absolute control may differ slightly when the model's target exceeds the per-step rel clip (0.02 m / 0.05 rad) or when calvin_env's integrated internal target pose drifts from the observed tcp pose. OPEN: official score 4.43/5 was measured with EP_LEN=720 per subtask (the standard CALVIN harness uses 360). Full 20-dim native form lives in contracts/experiments/xvla.json."
 }

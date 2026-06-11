@@ -1,0 +1,81 @@
+{
+    "model": "vla_jepa_widowx",
+    "policy_class": "VLAJEPAPolicy",
+    "checkpoint": "lerobot/VLA-JEPA-SimplerEnv",
+    "robot_type": "widowx250s_bridge",
+    "robot_class": "arm6g1",
+    "chunk_size": 7,
+    "control_rate": 5,
+    "features": {
+        "observation.images.image": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "CHW",
+            "shape": [3, 224, 224],
+            "names": ["channel", "height", "width"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "Single external 3rd-person view (the only camera slot; Bridge has no wrist cam). float32 [0,1] CHW; the policy resizes to 224x224 internally (config resize_images_to), squashing the env's 480x640 aspect exactly like the starVLA eval client's cv.resize."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "Task instruction, formatted into the Qwen3-VL prompt template; required by the VLA."
+        },
+        "action.delta_eef_pos": {
+            "role": "action",
+            "state_type": "EE_DEL_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["world_vector.dx", "world_vector.dy", "world_vector.dz"],
+            "normalization": "min_max",
+            "stats": {
+                "mean": [0.00011365935642970726, 6.556110747624189e-05, -6.320965621853247e-05],
+                "std": [0.006909770891070366, 0.009684093296527863, 0.008962905034422874],
+                "min": [-0.4007510244846344, -0.13874775171279907, -0.22553899884223938],
+                "max": [0.41691166162490845, 0.25864794850349426, 0.21218234300613403]
+            },
+            "comment": "Bridge 'world_vector' eef translation delta in meters (5 Hz; per-step deltas ~7-10 mm std). OPEN: frame base vs world for SIMPLER/Bridge unverified — same flag as the widowx env contract."
+        },
+        "action.delta_eef_rot": {
+            "role": "action",
+            "state_type": "EE_DEL_ROT",
+            "state_representation": "EULXYZ",
+            "frame": "eef",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["rotation_delta.droll", "rotation_delta.dpitch", "rotation_delta.dyaw"],
+            "normalization": "min_max",
+            "stats": {
+                "mean": [-7.205353176686913e-05, -0.00019515302847139537, 0.0001203166029881686],
+                "std": [0.020121052861213684, 0.021582655608654022, 0.0547233410179615],
+                "min": [-3.2010786533355713, -1.8618112802505493, -6.279075622558594],
+                "max": [3.122201919555664, 1.8618112802505493, 6.272472858428955]
+            },
+            "comment": "Bridge 'rotation_delta' as extrinsic euler-XYZ (roll, pitch, yaw) rates — NOT axis-angle. The starVLA SimplerEnv client converts euler2axangle before env.step; the vla_jepa_widowx agent's adapter does the same (scipy as_rotvec). OPEN: frame=eef assumed, mirroring the widowx env contract's flag."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "GRIPPER_ABS_POS",
+            "state_representation": "NORM11",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["gripper.open_close"],
+            "limits": {"min": [-1.0], "max": [1.0]},
+            "normalization": "identity",
+            "stats": {"mean": [0.28829458355903625], "std": [0.45436277985572815], "min": [0.0], "max": [1.0]},
+            "comment": "Trained in {0,1} where 1=open (Bridge convention; stats above are that space, action.mask=0 excludes it from MIN_MAX). The lerobot postprocessor binarizes to 1-2*(g>0.5), i.e. {-1 open, +1 close} (robosuite sign). SimplerEnv WidowX expects the OPPOSITE sign (+1 open, -1 close — the official client emits 2*(open>0.5)-1), so the agent's adapter flips the sign before sending."
+        }
+    },
+    "comment": "VLA-JEPA (Qwen3-VL-2B + V-JEPA2 world model + DiT-B flow head; arXiv:2602.10098) finetuned for SimplerEnv visual-matching eval, WidowX 250s / Bridge embodiment. NO proprio: input_features is image-only (the checkpoint's normalizer carries vestigial observation.state stats, but the policy consumes no state at inference — the agent must NOT feed observation.state). Official eval protocol (starVLA model2simpler_interface.py, policy_setup=widowx_bridge): re-infer the 7-step chunk EVERY env step and adaptively ensemble overlapping chunks (AdaptiveEnsembler, horizon 7, alpha 0.1), then threshold the gripper — the agent reproduces this instead of LeRobot's pop-the-queue select_action. The paper also evaluates a Google-Robot SimplerEnv setup; this contract covers only the WidowX embodiment (one contract per embodiment; no Google-Robot env in this repo). OPEN: whether this single checkpoint serves both SimplerEnv embodiments (camera/action stats here are Bridge-consistent) — if a Google-Robot env is added, author a separate vla_jepa_google_robot.json with the sticky-gripper logic. Requires a lerobot build with policies/vla_jepa (git main, not 0.5.x)."
+}

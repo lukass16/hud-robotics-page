@@ -1,0 +1,326 @@
+{
+    "robot_type": "calvin_panda",
+    "robot_class": "arm7g1",
+    "control_rate": 30,
+    "features": {
+        "observation.images.rgb_static": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "uint8",
+            "state_representation": "HWC",
+            "shape": [
+                200,
+                200,
+                3
+            ],
+            "names": [
+                "height",
+                "width",
+                "channel"
+            ],
+            "stats": {
+                "min": [
+                    [
+                        [
+                            0
+                        ]
+                    ],
+                    [
+                        [
+                            0
+                        ]
+                    ],
+                    [
+                        [
+                            0
+                        ]
+                    ]
+                ],
+                "max": [
+                    [
+                        [
+                            255
+                        ]
+                    ],
+                    [
+                        [
+                            255
+                        ]
+                    ],
+                    [
+                        [
+                            255
+                        ]
+                    ]
+                ]
+            },
+            "comment": "Static scene camera (CALVIN default, 200x200, fov 10). Scene view first by camera-order convention."
+        },
+        "observation.images.rgb_gripper": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "uint8",
+            "state_representation": "HWC",
+            "shape": [
+                84,
+                84,
+                3
+            ],
+            "names": [
+                "height",
+                "width",
+                "channel"
+            ],
+            "stats": {
+                "min": [
+                    [
+                        [
+                            0
+                        ]
+                    ],
+                    [
+                        [
+                            0
+                        ]
+                    ],
+                    [
+                        [
+                            0
+                        ]
+                    ]
+                ],
+                "max": [
+                    [
+                        [
+                            255
+                        ]
+                    ],
+                    [
+                        [
+                            255
+                        ]
+                    ],
+                    [
+                        [
+                            255
+                        ]
+                    ]
+                ]
+            },
+            "comment": "Gripper-mounted RGB (84x84). The dataset's tactile sensor is not served."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "Language annotation for the current long-horizon subtask."
+        },
+        "observation.state.tcp_pos": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "world",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [
+                3
+            ],
+            "order": "0-2",
+            "names": [
+                "tcp_pos.x",
+                "tcp_pos.y",
+                "tcp_pos.z"
+            ],
+            "comment": "TCP position in world frame (robot_obs[0:3], pybullet link state)."
+        },
+        "observation.state.tcp_euler": {
+            "role": "observation",
+            "state_type": "EE_ABS_ROT",
+            "state_representation": "EULXYZ",
+            "frame": "world",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [
+                3
+            ],
+            "order": "3-5",
+            "names": [
+                "tcp_euler.rx",
+                "tcp_euler.ry",
+                "tcp_euler.rz"
+            ],
+            "comment": "TCP orientation as euler XYZ, world frame (robot_obs[3:6]; pybullet getEulerFromQuaternion = extrinsic XYZ)."
+        },
+        "observation.state.gripper_width": {
+            "role": "observation",
+            "state_type": "GRIPPER_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [
+                1
+            ],
+            "order": "6",
+            "names": [
+                "gripper_opening_width"
+            ],
+            "limits": {
+                "min": [
+                    0.0
+                ],
+                "max": [
+                    0.08
+                ]
+            },
+            "comment": "Gripper opening width in meters (robot_obs[6]; sum of both finger joints, each 0-0.04)."
+        },
+        "observation.state.arm_joint_pos": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [
+                7
+            ],
+            "order": "7-13",
+            "names": [
+                "robot_joint_0",
+                "robot_joint_1",
+                "robot_joint_2",
+                "robot_joint_3",
+                "robot_joint_4",
+                "robot_joint_5",
+                "robot_joint_6"
+            ],
+            "limits": {
+                "min": [
+                    -2.8973,
+                    -1.7628,
+                    -2.8973,
+                    -3.0718,
+                    -2.8973,
+                    -0.0175,
+                    -2.8973
+                ],
+                "max": [
+                    2.8973,
+                    1.7628,
+                    2.8973,
+                    -0.0698,
+                    2.8973,
+                    3.7525,
+                    2.8973
+                ]
+            },
+            "comment": "7 arm joint positions (rad; robot_obs[7:14]). Limits = Franka bounds from calvin_env's robot config."
+        },
+        "observation.state.gripper_action_state": {
+            "role": "observation",
+            "state_type": "GRIPPER_ABS_POS",
+            "state_representation": "NORM11",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [
+                1
+            ],
+            "order": "14",
+            "names": [
+                "gripper_action"
+            ],
+            "limits": {
+                "min": [
+                    -1.0
+                ],
+                "max": [
+                    1.0
+                ]
+            },
+            "comment": "Last commanded binary gripper action in robot_obs[14]: close=-1, open=+1."
+        },
+        "action.rel_tcp_pos": {
+            "role": "action",
+            "state_type": "EE_DEL_POS",
+            "state_representation": "XYZ",
+            "frame": "world",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [
+                3
+            ],
+            "order": "0-2",
+            "names": [
+                "rel_tcp_pos.dx",
+                "rel_tcp_pos.dy",
+                "rel_tcp_pos.dz"
+            ],
+            "limits": {
+                "min": [
+                    -1.0,
+                    -1.0,
+                    -1.0
+                ],
+                "max": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "comment": "rel_actions pos: normalized world-frame tcp delta; calvin_env scales by max_rel_pos=0.02 m (dataset scale factor 50) and integrates onto its internal target pose (use_target_pose)."
+        },
+        "action.rel_tcp_euler": {
+            "role": "action",
+            "state_type": "EE_DEL_ROT",
+            "state_representation": "EULXYZ",
+            "frame": "world",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [
+                3
+            ],
+            "order": "3-5",
+            "names": [
+                "rel_tcp_euler.drx",
+                "rel_tcp_euler.dry",
+                "rel_tcp_euler.drz"
+            ],
+            "limits": {
+                "min": [
+                    -1.0,
+                    -1.0,
+                    -1.0
+                ],
+                "max": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "comment": "rel_actions orient: normalized euler-XYZ delta; calvin_env scales by max_rel_orn=0.05 rad (dataset scale factor 20)."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "GRIPPER_ABS_POS",
+            "state_representation": "NORM11",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [
+                1
+            ],
+            "order": "6",
+            "names": [
+                "gripper_action"
+            ],
+            "limits": {
+                "min": [
+                    -1.0
+                ],
+                "max": [
+                    1.0
+                ]
+            },
+            "comment": "Binary gripper: close=-1, open=+1 (absolute in the rel_actions vector; calvin_env asserts exactly +-1, the bridge snaps by sign)."
+        }
+    },
+    "comment": "CALVIN Franka Panda on the PlayTable (calvin_env / PyBullet, eval scene D), 30 Hz. Implemented by demos/benchmarks/envs/calvin (HUD sim bridge; episodes are subtasks of the official 1000 evaluation chains). This contract is the env's default 'relative' action branch \u2014 the canonical CALVIN policy interface (rel_actions: world-frame normalized tcp deltas + binary gripper). The env also exposes an 8-dim absolute branch (pos + xyzw quat + gripper; BENCH_CONTROL=absolute) matching the official X-VLA eval client; see envs/calvin/calvin_abs.json (one wire contract per control mode). State = 15-dim robot_obs split per quantity ('order' reassembles). No env-side normalization (dtype + stats/limits only); per-dim distribution stats would come from the (not downloaded) dataset."
+}

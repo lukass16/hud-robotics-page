@@ -6,10 +6,6 @@
     "robot_class": "arm7g1",
     "chunk_size": 50,
     "control_rate": 10,
-    "robot_type_variables": {
-        "franka_panda_libero": {}
-    },
-    "decision_variables": {},
     "features": {
         "observation.images.image": {
             "role": "observation",

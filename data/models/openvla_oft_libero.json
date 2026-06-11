@@ -6,12 +6,7 @@
     "robot_class": "arm7g1",
     "chunk_size": 8,
     "control_rate": 10,
-    "robot_type_variables": {
-        "franka_panda_libero": {"unnorm_key": "libero_spatial_no_noops"}
-    },
-    "decision_variables": {
-        "unnorm_key": "LIBERO suite-specific denormalization key (spatial/object/goal/10)."
-    },
+    "unnorm_key": "libero_spatial_no_noops",
     "features": {
         "observation.images.image": {
             "role": "observation",

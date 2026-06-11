@@ -6,10 +6,6 @@
     "robot_class": "arm7g1",
     "chunk_size": 50,
     "control_rate": 10,
-    "robot_type_variables": {
-        "franka_panda_libero": {}
-    },
-    "decision_variables": {},
     "features": {
         "observation.images.image": {
             "role": "observation",
@@ -153,5 +149,5 @@
             "comment": "Gripper open/close, normalized [-1,1], ABSOLUTE (arm is delta)."
         }
     },
-    "comment": "SmolVLA (SmolVLM2 backbone) finetuned on LIBERO, one Franka Panda. Single action (ee_del split into pos/rot/gripper). Matching uses robot_type_variables only."
+    "comment": "SmolVLA (SmolVLM2 backbone) finetuned on LIBERO, one Franka Panda. Single action (ee_del split into pos/rot/gripper). Matching gates on robot_type."
 }

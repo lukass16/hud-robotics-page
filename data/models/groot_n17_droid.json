@@ -1,0 +1,127 @@
+{
+    "model": "groot_n17_droid",
+    "policy_class": "Gr00tPolicy",
+    "checkpoint": "nvidia/GR00T-N1.7-DROID",
+    "trained_on": "DROID (oxe_droid_relative_eef_relative_joint)",
+    "embodiment_tag": "oxe_droid_relative_eef_relative_joint",
+    "robot_type": "droid_franka_robotiq",
+    "robot_class": "arm7g1",
+    "chunk_size": 40,
+    "control_rate": 15,
+    "features": {
+        "observation.images.exterior_image_1_left": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "uint8",
+            "state_representation": "HWC",
+            "shape": [180, 320, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0]], [[0]], [[0]]], "max": [[[255]], [[255]], [[255]]]},
+            "comment": "DROID exterior (over-shoulder-left) view, GR00T modality key video.exterior_image_1_left. The env's exterior_image maps here, aspect-preserving resize+pad to 180x320 uint8 (openpi resize_with_pad), exactly like the official DROID client (examples/DROID/main_gr00t.py RESOLUTION=(180,320))."
+        },
+        "observation.images.wrist_image_left": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "uint8",
+            "state_representation": "HWC",
+            "shape": [180, 320, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0]], [[0]], [[0]]], "max": [[[255]], [[255]], [[255]]]},
+            "comment": "DROID wrist view, GR00T modality key video.wrist_image_left. The env's wrist_image maps here (resize+pad to 180x320)."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "Task instruction. GR00T language modality key annotation.language.language_instruction (first of up to 6 duplicate slots); fed as language={key: [[instruction]]}."
+        },
+        "observation.state.eef_9d": {
+            "role": "observation",
+            "state_type": "EE_ABS_POSE",
+            "state_representation": "XYZ_ROT6D",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [9],
+            "order": "0-8",
+            "names": [
+                "eef.x", "eef.y", "eef.z",
+                "eef.r00", "eef.r01", "eef.r02", "eef.r10", "eef.r11", "eef.r12"
+            ],
+            "normalization": "quantile",
+            "stats": {
+                "min": [0.27268, -0.45497, -0.05355, -0.98065, -0.54462, -0.999, -0.64859, -0.84621, -0.97859],
+                "max": [0.78311, 0.44606, 0.77982, 0.98723, 0.91122, 0.57848, 0.99935, 0.82305, 0.98425]
+            },
+            "comment": "EE pose as xyz(3) + first-two-rows-of-rotation-matrix rot6d(6), with the DROID egocentric rotation correction (examples/DROID/main_gr00t.py compute_eef_9d, DROID_EEF_ROTATION_CORRECT). OPEN: the RoboLab env does NOT expose EE cartesian pose in its wire state (only 7 joints + gripper), so the agent ZERO-FILLS eef_9d. GR00T's relative-joint action is reconstructed from joint_position state (which IS available), so the emitted joint action stays valid; eef_9d only conditions the VLM and is mitigated by the checkpoint's 0.5 state-dropout. For full fidelity, extend the RoboLab bridge to emit cartesian_position and compute eef_9d here."
+        },
+        "observation.state.gripper_position": {
+            "role": "observation",
+            "state_type": "GRIPPER_ABS_POS",
+            "state_representation": "NORM01",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "9",
+            "names": ["gripper_position"],
+            "normalization": "quantile",
+            "stats": {"min": [0.0], "max": [0.99119]},
+            "comment": "Gripper opening (GR00T state key gripper_position, 0=open..1=closed). The RoboLab env's gripper_pos (NORM01, 0=open/1=closed) maps directly."
+        },
+        "observation.state.joint_position": {
+            "role": "observation",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [7],
+            "order": "10-16",
+            "names": [
+                "panda_joint1", "panda_joint2", "panda_joint3", "panda_joint4",
+                "panda_joint5", "panda_joint6", "panda_joint7"
+            ],
+            "normalization": "quantile",
+            "stats": {
+                "min": [-0.88756, -0.83709, -0.85312, -2.76908, -1.75879, 1.21686, -1.99689],
+                "max": [0.91825, 1.43858, 0.74274, -0.45518, 1.67205, 3.4904, 2.20288]
+            },
+            "comment": "7 absolute Panda arm joint positions (rad). The RoboLab env's 7 arm joints map directly; this is the state GR00T uses to convert its relative-joint action back to absolute targets at inference time."
+        },
+        "action.joint_position": {
+            "role": "action",
+            "state_type": "JOINT_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [7],
+            "order": "0-6",
+            "names": [
+                "panda_joint1", "panda_joint2", "panda_joint3", "panda_joint4",
+                "panda_joint5", "panda_joint6", "panda_joint7"
+            ],
+            "normalization": "quantile",
+            "stats": {
+                "min": [-0.8983, -0.81768, -0.86828, -2.76903, -1.77483, 1.20105, -2.01389],
+                "max": [0.92874, 1.44568, 0.75459, -0.45031, 1.68992, 3.50999, 2.21855]
+            },
+            "comment": "7 Panda arm joint position targets. The embodiment is `..._relative_eef_relative_joint`, but get_action returns ABSOLUTE joint targets (q01/q99 here span the Franka joint range — GR00T applies the inverse relative transform using the joint_position STATE the agent feeds). The official DROID client (main_gr00t.py) sends them straight to env.step (action_space='joint_position'); the agent does the same to RoboLab's DroidJointPositionActionCfg. NB: GR00T also emits eef_9d (9) action dims, which we DISCARD — the env consumes joint_position+gripper only (this contract specs the real sent action)."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "GRIPPER_ABS_POS",
+            "state_representation": "NORM01",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "7",
+            "names": ["gripper.open_close"],
+            "limits": {"min": [0.0], "max": [1.0]},
+            "normalization": "quantile",
+            "stats": {"min": [0.0], "max": [1.0]},
+            "comment": "Absolute gripper command (GR00T action key gripper_position). Binarized >0.5 -> close, exactly like the official client; RoboLab's BinaryJointPositionZeroToOneActionCfg closes the finger_joint when >0.5."
+        }
+    },
+    "comment": "NVIDIA Isaac GR00T N1.7 post-trained on DROID (nvidia/GR00T-N1.7-DROID, EmbodimentTag.OXE_DROID_RELATIVE_EEF_RELATIVE_JOINT). Cosmos-Reason2-2B VLM backbone + flow-matching DiT (4 denoising steps, 3B params). Inference via Gr00tPolicy.get_action({'video':{exterior_image_1_left,wrist_image_left},'state':{eef_9d,gripper_position,joint_position},'language':{...}}) -> action chunk (T=40) of {eef_9d(9),gripper_position(1),joint_position(7)}; the agent uses joint_position(7)+gripper(1) and discards eef_9d. Action signature JOINT_ABS_POS+GRIPPER_ABS_POS matches the RoboLab env joint_pos branch (robolab.json). Open-loop horizon 15 (official DROID client), ~15 Hz. Pairs the `robolab` env launched with --control joint_pos (the default). KEY OPEN: the env does not expose EE cartesian pose, so the eef_9d state input is zero-filled (see observation.state.eef_9d). Requires the `gr00t` package (NVIDIA/Isaac-GR00T); not a LeRobot policy (custom GR00TModel)."
+}

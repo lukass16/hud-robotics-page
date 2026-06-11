@@ -43,10 +43,7 @@ export interface RawModel {
   robot_class: string;
   chunk_size?: number;
   control_rate: number;
-  robot_type_variables?: Record<string, unknown>;
-  decision_variables?: Record<string, string>;
   features?: Record<string, Feature>;
-  action_modes?: Record<string, { features?: Record<string, Feature> }>;
   comment?: string;
 }
 
@@ -89,7 +86,6 @@ export interface ModelSummary extends CommonSummary {
   checkpoint?: string;
   chunkSize?: number;
   normalizations: string[];
-  decisionVariables: string[];
   multiEmbodiment: boolean;
   raw: RawModel;
 }

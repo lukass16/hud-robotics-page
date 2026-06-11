@@ -41,6 +41,14 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {process.env.NEXT_PUBLIC_GITHUB_PAGES !== "true" && (
+              <a
+                href="/launch"
+                className="text-[11px] text-foreground px-2.5 py-1 rounded-sm border border-black bg-white shadow-brutal hover:-translate-x-px hover:-translate-y-px"
+              >
+                Launch
+              </a>
+            )}
             <span className="text-[11px] text-muted font-mono px-2.5 py-1 rounded-sm border border-black bg-white shadow-brutal">
               {data.envs.length} envs · {data.models.length} models
             </span>

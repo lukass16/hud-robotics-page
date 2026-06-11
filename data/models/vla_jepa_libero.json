@@ -1,49 +1,39 @@
 {
-    "model": "pi05_libero",
-    "policy_class": "PI05Policy",
-    "checkpoint": "lerobot/pi05_libero_finetuned",
+    "model": "vla_jepa_libero",
+    "policy_class": "VLAJEPAPolicy",
+    "checkpoint": "lerobot/VLA-JEPA-LIBERO",
     "robot_type": "franka_panda_libero",
     "robot_class": "arm7g1",
-    "chunk_size": 50,
+    "chunk_size": 7,
     "control_rate": 10,
     "features": {
         "observation.images.image": {
             "role": "observation",
             "type": "rgb",
             "dtype": "float32",
-            "state_representation": "HWC",
-            "shape": [256, 256, 3],
-            "names": ["height", "width", "channel"],
+            "state_representation": "CHW",
+            "shape": [3, 224, 224],
+            "names": ["channel", "height", "width"],
             "normalization": "identity",
             "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
-            "comment": "Primary slot (env agentview). float32 [0,1]; policy rescales to [-1,1] for SigLIP."
+            "comment": "Primary slot (env agentview). float32 [0,1] CHW; the policy itself resizes to 224x224 (config resize_images_to) before the Qwen3-VL processor, so the env's native 256x256 passes through unchanged."
         },
         "observation.images.image2": {
             "role": "observation",
             "type": "rgb",
             "dtype": "float32",
-            "state_representation": "HWC",
-            "shape": [256, 256, 3],
-            "names": ["height", "width", "channel"],
+            "state_representation": "CHW",
+            "shape": [3, 224, 224],
+            "names": ["channel", "height", "width"],
             "normalization": "identity",
             "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
-            "comment": "Wrist slot (env robot0_eye_in_hand). pi0.5 names it 'image2'."
-        },
-        "observation.images.empty_camera_0": {
-            "role": "observation",
-            "type": "rgb",
-            "dtype": "float32",
-            "state_representation": "HWC",
-            "padding": true,
-            "shape": [224, 224, 3],
-            "names": ["height", "width", "channel"],
-            "comment": "Synthetic masked pad, not a real input. Not used for matching."
+            "comment": "Wrist slot (env robot0_eye_in_hand); same 'image'/'image2' naming as the pi0.5 LIBERO checkpoint."
         },
         "observation.text": {
             "role": "observation",
             "type": "language",
             "dtype": "string",
-            "comment": "Task instruction (language conditioning); required by the VLA."
+            "comment": "Task instruction, formatted into the Qwen3-VL prompt template ('Your task is {instruction}. ...'); required by the VLA."
         },
         "observation.state.eef_pos": {
             "role": "observation",
@@ -57,12 +47,12 @@
             "names": ["robot0_eef_pos.x", "robot0_eef_pos.y", "robot0_eef_pos.z"],
             "normalization": "mean_std",
             "stats": {
-                "mean": [-0.04651878401637077, 0.034409068524837494, 0.7645524740219116],
-                "std": [0.10494395345449448, 0.15176619589328766, 0.3785167336463928],
+                "mean": [-0.048898547887802124, 0.036893680691719055, 0.7890402674674988],
+                "std": [0.10639014095067978, 0.15115733444690704, 0.38406896591186523],
                 "min": [-0.4828203022480011, -0.3255046010017395, 0.008128180168569088],
                 "max": [0.21031762659549713, 0.39128610491752625, 1.3660105466842651]
             },
-            "comment": "Absolute eef position, base frame. State is discretized to 256 bins and tokenized into the prompt."
+            "comment": "Absolute eef position, base frame. MEAN_STD stats from the checkpoint's normalizer safetensors (its own LIBERO finetune split; close to but not identical to the physical-intelligence/libero values)."
         },
         "observation.state.eef_rot": {
             "role": "observation",
@@ -76,12 +66,12 @@
             "names": ["robot0_eef_axis_angle.rx", "robot0_eef_axis_angle.ry", "robot0_eef_axis_angle.rz"],
             "normalization": "mean_std",
             "stats": {
-                "mean": [2.9722094535827637, -0.22046978771686554, -0.12557940185070038],
-                "std": [0.34427371621131897, 0.9069468379020691, 0.3253919184207916],
+                "mean": [2.9771945476531982, -0.1417286992073059, -0.11769362539052963],
+                "std": [0.35302382707595825, 0.8227341175079346, 0.3235756754875183],
                 "min": [0.35277295112609863, -3.641430377960205, -1.842738389968872],
                 "max": [3.6714255809783936, 3.560650587081909, 1.386339545249939]
             },
-            "comment": "Absolute eef orientation (axis-angle), base frame."
+            "comment": "Absolute eef orientation (axis-angle), base frame — same composition as the LIBERO env's state vector."
         },
         "observation.state.gripper": {
             "role": "observation",
@@ -95,12 +85,12 @@
             "limits": {"min": [0.0, -0.04], "max": [0.04, 0.0]},
             "normalization": "mean_std",
             "stats": {
-                "mean": [0.02691425383090973, -0.027190783992409706],
-                "std": [0.014175903052091599, 0.014058894477784634],
+                "mean": [0.02643601968884468, -0.026655130088329315],
+                "std": [0.014583991840481758, 0.01446700468659401],
                 "min": [-0.0013586411951109767, -0.042040832340717316],
                 "max": [0.04233968257904053, 0.0013633022317662835]
             },
-            "comment": "Gripper finger qpos (2 DOF)."
+            "comment": "Gripper finger qpos (2 DOF). State (8-dim) feeds the DiT action head's state encoder; the full vector is MEAN_STD-normalized as one block."
         },
         "action.delta_eef_pos": {
             "role": "action",
@@ -114,14 +104,14 @@
             "shape": [3],
             "order": "0-2",
             "names": ["delta_eef_pos.dx", "delta_eef_pos.dy", "delta_eef_pos.dz"],
-            "normalization": "mean_std",
+            "normalization": "min_max",
             "stats": {
-                "mean": [0.06278156489133835, 0.08684080839157104, -0.09037306159734726],
-                "std": [0.33552372455596924, 0.3784469962120056, 0.4447286128997803],
+                "mean": [0.07237596809864044, 0.08987006545066833, -0.10144743323326111],
+                "std": [0.3498823344707489, 0.37794139981269836, 0.4600842595100403],
                 "min": [-0.9375, -0.9375, -0.9375],
                 "max": [0.9375, 0.9375, 0.9375]
             },
-            "comment": "OSC_POSE translation delta, base frame. 50-step chunk."
+            "comment": "OSC_POSE translation delta, base frame. MIN_MAX-normalized to [-1,1] during training; the postprocessor clamps the model output to [-1,1] (vla_jepa_clip_actions) before unnormalizing. min/max match the LIBERO env clip bounds."
         },
         "action.delta_eef_rot": {
             "role": "action",
@@ -135,14 +125,14 @@
             "shape": [3],
             "order": "3-5",
             "names": ["delta_eef_axis_angle.drx", "delta_eef_axis_angle.dry", "delta_eef_axis_angle.drz"],
-            "normalization": "mean_std",
+            "normalization": "min_max",
             "stats": {
-                "mean": [0.0005407430580817163, 0.005643379874527454, -0.0052290987223386765],
-                "std": [0.03924354165792465, 0.06339296698570251, 0.07797027379274368],
+                "mean": [-0.00045383188989944756, 0.006273590959608555, -0.003878799732774496],
+                "std": [0.040388576686382294, 0.06616143882274628, 0.07763074338436127],
                 "min": [-0.2582142949104309, -0.375, -0.3675000071525574],
                 "max": [0.3557142913341522, 0.375, 0.375]
             },
-            "comment": "OSC_POSE rotation delta (axis-angle) vs current eef."
+            "comment": "OSC_POSE rotation delta (axis-angle) vs current eef. Stats verbatim from the checkpoint's normalizer safetensors; min/max match the LIBERO env clip bounds."
         },
         "action.gripper": {
             "role": "action",
@@ -154,10 +144,10 @@
             "order": "6",
             "names": ["gripper.open_close"],
             "limits": {"min": [-1.0], "max": [1.0]},
-            "normalization": "mean_std",
-            "stats": {"mean": [-0.0496407225728035], "std": [0.9987671375274658], "min": [-1.0], "max": [1.0]},
-            "comment": "Gripper open/close, normalized [-1,1], ABSOLUTE (arm is delta)."
+            "normalization": "identity",
+            "stats": {"mean": [0.5244863629341125], "std": [0.4994683265686035], "min": [0.0], "max": [1.0]},
+            "comment": "Trained in {0,1} where 1=open (stats above are that space; action.mask=0 excludes it from MIN_MAX). The checkpoint's postprocessor snaps it to {0,1} (vla_jepa_pre_snap_gripper) then maps 1-2*(g>0.5) (vla_jepa_binarize_gripper), so the emitted action is exactly {-1 open, +1 close} — robosuite/LIBERO convention, no adapter work needed. ABSOLUTE (arm is delta)."
         }
     },
-    "comment": "Reference example, mirrors pi05_libero.json (same model, finalized new format). pi0.5 flow-matching VLA finetuned on LIBERO, one Franka Panda. 50-step action chunk. Matching gates on robot_type."
+    "comment": "VLA-JEPA (Qwen3-VL-2B backbone + V-JEPA2 latent world model + DiT-B flow-matching action head; arXiv:2602.10098, LeRobot port of ginwind/VLA-JEPA) finetuned on LIBERO, one Franka Panda. Chunked inference: predict_action_chunk -> 7-step chunk, all 7 executed before re-inference (n_action_steps=7), matching the starVLA LIBERO eval client's chunk caching (no action ensembling). The world model is training-only; at inference only Qwen + action head run. State (8) is consumed by the action head's state encoder (input_features includes observation.state, unlike the SimplerEnv/Pretrain siblings). Requires a lerobot build that ships policies/vla_jepa (git main as of 2026-06; not in the 0.5.x PyPI releases)."
 }

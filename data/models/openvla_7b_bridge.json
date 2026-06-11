@@ -6,14 +6,7 @@
     "robot_class": "multi",
     "chunk_size": 1,
     "control_rate": 5,
-    "robot_type_variables": {
-        "widowx": {"unnorm_key": "bridge_orig"},
-        "widowx250s_bridge": {"unnorm_key": "bridge_orig"},
-        "bridge": {"unnorm_key": "bridge_orig"}
-    },
-    "decision_variables": {
-        "unnorm_key": "Dataset-specific action denormalization key in the OpenVLA checkpoint (e.g. bridge_orig, libero_10_no_noops)."
-    },
+    "unnorm_key": "bridge_orig",
     "features": {
         "observation.images.image": {
             "role": "observation",

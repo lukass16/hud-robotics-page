@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:pages": "tsx scripts/build-pages.ts",
     "start": "next start",
     "lint": "eslint",
+    "sync-contracts": "tsx scripts/sync-contracts.ts",
     "selftest": "tsx scripts/selftest.ts"
   },
   "dependencies": {

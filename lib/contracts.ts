@@ -10,7 +10,15 @@ import type {
   RawModel,
 } from "./types";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// In monorepo dev, read live from ../demos/contracts. For standalone deploys
+// (GitHub Pages, CI) use bundled ./data copies — refresh with `npm run
+// sync-contracts`. Only top-level *.json is read; subfolders like
+// models/nonimplemented are intentionally excluded.
+const LOCAL_DIR = path.join(process.cwd(), "data");
+const SOURCE_DIR = path.join(process.cwd(), "..", "demos", "contracts");
+const useBundled =
+  process.env.GITHUB_PAGES === "true" || !fs.existsSync(SOURCE_DIR);
+const DATA_DIR = useBundled ? LOCAL_DIR : SOURCE_DIR;
 
 function readJsonDir<T>(dir: string): { id: string; raw: T }[] {
   const full = path.join(DATA_DIR, dir);
@@ -38,17 +46,10 @@ function flatten(features: Record<string, Feature> | undefined): FlatFeature[] {
   return Object.entries(features).map(([key, f]) => ({ key, ...f }));
 }
 
-// Pull the action features for a model, handling single-mode (action.*) and the
-// experimental action_modes wrapper (prefer the native/preferred mode).
+// Pull the action features for a model (v0: one action space per contract,
+// declared as top-level action.* features).
 function modelActionFeatures(raw: RawModel): FlatFeature[] {
-  const direct = flatten(raw.features).filter((f) => f.key.startsWith("action."));
-  if (direct.length > 0) return direct;
-  if (raw.action_modes) {
-    const modes = Object.values(raw.action_modes);
-    const chosen = modes[0];
-    if (chosen?.features) return flatten(chosen.features);
-  }
-  return [];
+  return flatten(raw.features).filter((f) => f.key.startsWith("action."));
 }
 
 // Coarse action-space token (JOINT / EE / BASE) from a SPACE_REF_QUANTITY string.
@@ -138,7 +139,6 @@ function buildModel(id: string, raw: RawModel): ModelSummary {
     stateDim: obsState.reduce((s, f) => s + product(f.shape), 0),
     actionDim: actions.reduce((s, f) => s + product(f.shape), 0),
     normalizations: normalizationValues(all),
-    decisionVariables: Object.keys(raw.decision_variables ?? {}),
     multiEmbodiment: robotTypes.length > 1,
     comment: raw.comment,
     obsFeatures: obs,
@@ -147,16 +147,12 @@ function buildModel(id: string, raw: RawModel): ModelSummary {
   };
 }
 
-let cache: Dataset | null = null;
-
 export function loadDataset(): Dataset {
-  if (cache) return cache;
   const envs = readJsonDir<RawEnv>("envs").map(({ id, raw }) =>
     buildEnv(id, raw)
   );
   const models = readJsonDir<RawModel>("models").map(({ id, raw }) =>
     buildModel(id, raw)
   );
-  cache = { envs, models };
-  return cache;
+  return { envs, models };
 }

@@ -73,20 +73,6 @@ function Detail({
         ) : (
           <div className="text-muted text-[11px]">No action features.</div>
         )}
-        {row.kind === "model" && (row as ModelSummary).decisionVariables.length > 0 && (
-          <div className="mt-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1">
-              Decision variables
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {(row as ModelSummary).decisionVariables.map((d) => (
-                <Tag key={d} mono>
-                  {d}
-                </Tag>
-              ))}
-            </div>
-          </div>
-        )}
         {row.comment && (
           <div className="mt-2">
             <div className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1">

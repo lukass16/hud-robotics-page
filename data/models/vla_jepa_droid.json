@@ -1,0 +1,78 @@
+{
+    "model": "vla_jepa_droid",
+    "policy_class": "VLAJEPAPolicy",
+    "checkpoint": "lerobot/VLA-JEPA-Pretrain",
+    "robot_type": "droid_franka_robotiq",
+    "robot_class": "arm7g1",
+    "chunk_size": 7,
+    "control_rate": 15,
+    "features": {
+        "observation.images.exterior_1_left": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "CHW",
+            "shape": [3, 224, 224],
+            "names": ["channel", "height", "width"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "DROID exterior camera 1 (left stereo channel) — slot names are the DROID dataset's own keys. float32 [0,1] CHW; the policy resizes to 224x224 internally. No wrist slot: the pretrain consumed the two exterior views only."
+        },
+        "observation.images.exterior_2_left": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "float32",
+            "state_representation": "CHW",
+            "shape": [3, 224, 224],
+            "names": ["channel", "height", "width"],
+            "normalization": "identity",
+            "stats": {"min": [[[0.0]], [[0.0]], [[0.0]]], "max": [[[1.0]], [[1.0]], [[1.0]]]},
+            "comment": "DROID exterior camera 2 (left stereo channel)."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "Task instruction, formatted into the Qwen3-VL prompt template; required by the VLA."
+        },
+        "action.delta_eef_pose": {
+            "role": "action",
+            "state_type": "EE_DEL_POSE",
+            "state_representation": "XYZ_EULXYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [6],
+            "order": "0-5",
+            "names": [
+                "cartesian_velocity.vx", "cartesian_velocity.vy", "cartesian_velocity.vz",
+                "cartesian_velocity.wroll", "cartesian_velocity.wpitch", "cartesian_velocity.wyaw"
+            ],
+            "normalization": "min_max",
+            "stats": {
+                "mean": [0.02742478996515274, -0.0026808488182723522, 0.015953252092003822, 0.003548798616975546, -0.030532976612448692, -0.006683542393147945],
+                "std": [0.25387799739837646, 0.1842699646949768, 0.22532877326011658, 0.2175685167312622, 0.22572855651378632, 0.28678369522094727],
+                "min": [-0.9999999403953552, -0.9999951124191284, -0.9999960660934448, -0.9999980330467224, -0.9999982118606567, -0.9999998807907104],
+                "max": [0.9999998211860657, 0.999991774559021, 0.9999973177909851, 0.9999874830245972, 0.9999954104423523, 0.9999998807907104],
+                "q01": [-0.7776405811309814, -0.5803528428077698, -0.5795133113861084, -0.6464062333106995, -0.7041175365447998, -0.8895133137702942],
+                "q99": [0.7597945332527161, 0.5726332068443298, 0.7351094484329224, 0.6705538630485535, 0.6465045213699341, 0.8897575736045837]
+            },
+            "comment": "DROID flat 'action' arm dims: 6-DoF cartesian command pre-normalized to [-1,1] in the dataset (translation + euler-XYZ rotation rates; units 'none' because the dataset values are velocity-controller commands clipped to [-1,1], not raw m / rad). OPEN: exact controller semantics (cartesian_velocity command vs per-step pose delta, and the base-frame assumption) taken from the DROID RLDS spec, not verified against starVLA's OXE data pipeline."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "GRIPPER_ABS_POS",
+            "state_representation": "NORM11",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["gripper.open_close"],
+            "limits": {"min": [-1.0], "max": [1.0]},
+            "normalization": "identity",
+            "stats": {"mean": [0.5860324501991272], "std": [0.4287617802619934], "min": [0.0], "max": [1.0]},
+            "comment": "Trained in [0,1] (DROID gripper_position; action.mask=0 excludes it from MIN_MAX). The shared vla_jepa postprocessor binarizes 1-2*(g>0.5) to {-1,+1}. OPEN: DROID's convention is 1=closed (Robotiq), the opposite of the Bridge/LIBERO '1=open' the binarize step was written for — verify the sign (and consider bypassing the binarize step) before driving a real/sim DROID rig with this."
+        }
+    },
+    "comment": "VLA-JEPA pretrain checkpoint (arXiv:2602.10098): JEPA latent-world-model pretraining on Something-Something-v2 (220K human videos, no actions) + action supervision on DROID (76K trajectories). This is the base the LIBERO/SimplerEnv finetunes start from — its primary use is FINETUNING, not zero-shot eval. NO proprio at inference: input_features is image-only (vestigial 8-dim state stats [pos(3), euler(3), pad, gripper] sit unused in the normalizer). No env in this repo pairs with it: robolab (Isaac DROID) serves joint-space control while this emits the DROID flat cartesian action — no spec yaml ships for it. chunk_size 7; control_rate 15 = DROID's native rate. Requires a lerobot build with policies/vla_jepa (git main, not 0.5.x)."
+}

@@ -1,4 +1,4 @@
-# HUD Robot Spec — authoring guide
+# HUD Robot Spec v0 — authoring guide
 
 How to **completely specify** a robot environment (an embodiment) and a robot model
 (a policy) as JSON, so the two can be matched in `.initialize()`. This document is
@@ -9,6 +9,18 @@ The format is kept close in spirit to the LeRobot dataset schema (`info.json` /
 `stats.json`): per-feature `dtype`, `shape`, `names`, `stats`, plus a `robot_type` and
 a control rate. We extend it with the semantic layer needed for matching
 (`state_type`, `state_representation`, `frame`, `order`, `units`, `limits`).
+
+**v0 scope (this document).** A contract describes **one embodiment**, with **one
+observation space and one action space** — no per-embodiment *decision variables* and
+no multi-mode wrappers. A model that targets several embodiments (or exposes several
+action/observation forms) is written as **separate contracts, one per form**. The
+older multi-mode / decision-variable schema is preserved as documentation only under
+`demos/contracts/experiments/spec_old.md`; the matcher does **not** load it.
+
+**Rank ≥ 1 (law).** Every feature is at least 1-D: `shape` is a non-empty list. A
+scalar feature uses `shape: [1]`, never `[]`. The `robot` wire codec promotes 0-D
+arrays to 1-D and LeRobot dataset columns are always ≥ 1-D, so declaring `[1]` keeps
+env, wire, and dataset consistent.
 
 ---
 
@@ -50,14 +62,11 @@ Matching reconciles the two: cameras by role, vectors by `state_type` + `order` 
 | `model`                | string        | Model id.                                                                                                                                                                                                    |
 | `policy_class`         | string        | Implementation class, e.g. `"PI05Policy"`.                                                                                                                                                                   |
 | `checkpoint`           | string        | Default weights id/link.                                                                                                                                                                                     |
-| `robot_type`           | string | list | Single embodiment, or **list** for multi-embodiment models.                                                                                                                                                  |
-| `robot_class`          | string        | `"multi"` for multi-embodiment (then `robot_type` lists them).                                                                                                                                               |
+| `robot_type`           | string        | The single embodiment this contract targets — the **sole** declaration of what the model supports. Matching gates on it. (Multi-embodiment checkpoints get one contract per embodiment.)                     |
+| `robot_class`          | string        | Coarse morphology class (see §3.9).                                                                                                                                                                          |
 | `chunk_size`           | int           | Action-horizon: how many steps the policy emits per inference.                                                                                                                                               |
 | `control_rate`         | int (Hz)      | Rate the policy was trained/biased to.                                                                                                                                                                       |
-| `robot_type_variables` | object        | Map `robot_type -> decision-variable values`. Matching uses this. Every entry must include **all keys** listed in `decision_variables` (use `null` when not used for that embodiment).                       |
-| `decision_variables`   | object        | Schema for per-embodiment knobs: each key is a decision variable, value is a short description. Empty `{}` if the model has none. Keys here define the required shape of every `robot_type_variables` entry. |
-| `features`             | object        | Observation features (+ the action, if single-mode).                                                                                                                                                         |
-| `action_modes` *       | object        | **\* In Development** — only for multi-mode models (see §5). The going-forward standard is **one action space per contract** (no `action_modes` wrapper); multi-mode specs live in `contracts/experiments/`.   |
+| `features`             | object        | Observation features + the action.                                                                                                                                                                           |
 | `comment`              | string        | Concise notes.                                                                                                                                                                                               |
 
 
@@ -174,7 +183,8 @@ Combinations of `rad`, `deg`, `m`, `s`, `N`; `none` for dimensionless / normaliz
 
 ### 3.12 Other per-feature keys
 
-- `shape` — per-sample shape (no batch dim), e.g. `[3]`, `[256, 256, 3]`.
+- `shape` — per-sample shape (no batch dim), e.g. `[3]`, `[256, 256, 3]`. **Rank ≥
+1 (law):** always a non-empty list; a scalar is `[1]`, never `[]`.
 - `order` — inclusive index range of this feature within the role-concatenated
 vector, e.g. `"0-2"`, `"6"`. Lets split groups reassemble.
 - `names` — element-level names (producer's own; see §6).
@@ -230,38 +240,21 @@ delta in `eef`, or gripper vs arm) and use `order` to reassemble the original ve
 
 ---
 
-## 5. Action modes* (multi-mode models only) — *In Development*
+## 5. One space per contract (multi-mode wrappers are retired)
 
-> **\* In Development.** This section (and the analogous, undocumented
-> `observation_modes` wrapper) is **experimental and not part of the standard
-> contract schema**. The going-forward standard is **one action space and one
-> observation space per contract** — a model/env that supports several action or
-> observation forms is expressed as **separate contracts**, one per form
-> (e.g. `xvla_libero.json`, `xvla_widowx.json`, `xvla_calvin.json` instead of a
-> single `xvla.json` with `action_modes` + `observation_modes`; `droid_joint_pos.json`
-> and `droid_joint_vel.json` instead of a `droid.json` with `action_modes`). The
-> original multi-mode specs are preserved under `contracts/experiments/` rather than
-> deleted. The matching code (`matching.py`) still implements the wrappers below, so
-> they remain documented here for reference until the design settles.
+The action always lives under `features` as `action.`* — there is **no**
+`action_modes` / `observation_modes` wrapper and no `decision_variables` /
+`robot_type_variables` schema in v0. A model/env that supports several action or
+observation forms is expressed as **separate contracts**, one per form
+(e.g. `xvla_libero.json`, `xvla_widowx.json`, `xvla_calvin.json` instead of a
+single `xvla.json` with `action_modes`; `droid_joint_pos.json` and
+`droid_joint_vel.json` instead of a `droid.json` with `action_modes`). The same
+applies to env-side launch variants: an env that can serve several control modes
+ships one complete contract per mode and selects the file at launch.
 
-Single-action models put the action under `features` as `action.`*.
-
-A model that exposes several action forms (e.g. a native output plus env-paired
-reductions) uses an `action_modes` wrapper; each mode owns a nested `features` dict
-of split sub-features:
-
-```json
-"action_modes": {
-  "ee6d_abs": { "native": true, "preferred": true, "comment": "...",
-    "features": {
-      "action.arm0.eef_pos": { "role": "action", "state_type": "EE_ABS_POS",
-        "state_representation": "XYZ", "frame": "base", "order": "0-2", ... },
-      "action.arm0.eef_rot": { "state_type": "EE_ABS_ROT",
-        "state_representation": "ROT6D", "order": "3-8", ... }
-    }
-  }
-}
-```
+The original multi-mode specs are preserved **as documentation only** under
+`demos/contracts/experiments/` (`spec_old.md` and the archived JSON corpus); the
+matching code (`matching.py`) does not implement the wrappers.
 
 ---
 
@@ -303,9 +296,6 @@ These come from explicit design decisions; follow them for consistency.
    standalone gripper feature. Dexterous multi-DoF hands remain `JOINT`.
 9. `**kp`/`kd` on both sides;** `limits` distinct from `stats` (hard bound vs observed
   distribution); `chunk_size` top-level on the model.
-10. `**decision_variables` defines the schema;** every `robot_type_variables` entry
-  includes all of its keys (`null` when unused). Empty schema `{}` when the model
-    has no per-embodiment knobs.
 
 ---
 
@@ -376,7 +366,7 @@ discrete mode-switch / terminate flags (RT-X) — not yet first-class, note in
 ```
 
 **Model — single embodiment VLA (pi0.5):** same feature shape, plus top-level
-`model`/`policy_class`/`checkpoint`/`chunk_size`/`control_rate`/`robot_type_variables`,
+`model`/`policy_class`/`checkpoint`/`chunk_size`/`control_rate`,
 images `float32` with `normalization: "identity"`, and `normalization` on each vector.
 
 ---
@@ -392,8 +382,7 @@ images `float32` with `normalization: "identity"`, and `normalization` on each v
 4. For each vector feature set `state_type` + `state_representation` + `units` +
   `names` (producer's convention).
 5. Model side only: `normalization` + `stats` (from the checkpoint processors),
-  `chunk_size`, `decision_variables` schema + uniform `robot_type_variables` entries,
-   `action_modes` if multi-mode.
+  `chunk_size`. Several action/observation forms → one contract per form (§5).
 6. Fill `stats`/`limits` where known; **flag every uncertain rotation/frame/unit with
   `OPEN:`** in a `comment`.
 

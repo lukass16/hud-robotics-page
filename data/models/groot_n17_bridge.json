@@ -1,0 +1,147 @@
+{
+    "model": "groot_n17_bridge",
+    "policy_class": "Gr00tPolicy",
+    "checkpoint": "nvidia/GR00T-N1.7-SimplerEnv-Bridge",
+    "trained_on": "BridgeData V2 (bridge_orig_lerobot) in SimplerEnv WidowX",
+    "embodiment_tag": "simpler_env_widowx",
+    "robot_type": "widowx250s_bridge",
+    "robot_class": "arm6g1",
+    "chunk_size": 8,
+    "control_rate": 5,
+    "features": {
+        "observation.images.image_0": {
+            "role": "observation",
+            "type": "rgb",
+            "dtype": "uint8",
+            "state_representation": "HWC",
+            "shape": [256, 256, 3],
+            "names": ["height", "width", "channel"],
+            "normalization": "identity",
+            "stats": {"min": [[[0]], [[0]], [[0]]], "max": [[[255]], [[255]], [[255]]]},
+            "comment": "Single Bridge/WidowX external view (GR00T modality key video.image_0). The agent maps the env's single `image` here and cv2-resizes (square squash, NOT pad) to 256x256 uint8 — matches the official Isaac-GR00T SimplerEnv eval (gr00t/eval/sim/SimplerEnv/simpler_env.py: cv2.resize(img,(256,256)))."
+        },
+        "observation.text": {
+            "role": "observation",
+            "type": "language",
+            "dtype": "string",
+            "comment": "Task instruction. GR00T language modality key annotation.human.action.task_description; fed as language={key: [[instruction]]}."
+        },
+        "observation.state.eef_pos": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["state.x", "state.y", "state.z"],
+            "normalization": "quantile",
+            "stats": {
+                "min": [0.17103, -0.16981, -0.05563],
+                "max": [0.45322, 0.23548, 0.1949],
+                "mean": [0.30943, 0.03073, 0.06444],
+                "std": [0.06057, 0.09191, 0.05156]
+            },
+            "comment": "EE position (base frame). min/max are the checkpoint's q01/q99 percentiles (use_percentiles=true). GR00T state keys x,y,z."
+        },
+        "observation.state.eef_euler": {
+            "role": "observation",
+            "state_type": "EE_ABS_ROT",
+            "state_representation": "EULXYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["state.roll", "state.pitch", "state.yaw"],
+            "normalization": "quantile",
+            "stats": {
+                "min": [-0.36493, -0.54187, -1.35428],
+                "max": [0.37802, 0.27569, 1.85006],
+                "mean": [0.00649, -0.0772, 0.10766],
+                "std": [0.13109, 0.16913, 0.57799]
+            },
+            "comment": "EE orientation as extrinsic-XYZ euler. The official eval derives this from the EE quaternion with a Bridge orientation correction: rpy = mat2euler(quat2mat(q) @ default_rot.T), default_rot=[[0,0,1],[0,1,0],[-1,0,0]]. The HUD env emits ee_abs proprio as axis-angle, so the agent reconstructs the rotation matrix from axis-angle and applies the SAME correction. OPEN: euler order (extrinsic XYZ) matches scipy te.mat2euler default; verify against the env's axis-angle base frame."
+        },
+        "observation.state.pad": {
+            "role": "observation",
+            "state_type": "EE_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["state.pad"],
+            "normalization": "identity",
+            "stats": {"min": [0.0], "max": [0.0], "mean": [0.0], "std": [0.0]},
+            "comment": "Always-zero padding slot (GR00T state key `pad`); carries no information (all-zero stats)."
+        },
+        "observation.state.gripper": {
+            "role": "observation",
+            "state_type": "GRIPPER_ABS_POS",
+            "state_representation": "REAL",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "7",
+            "names": ["state.gripper"],
+            "normalization": "quantile",
+            "stats": {"min": [0.05219], "max": [1.01057], "mean": [0.70813], "std": [0.35255]},
+            "comment": "Gripper openness scalar (GR00T state key `gripper`, ~[0,1.1]). OPEN: the official eval uses the WidowX `eef_pos[7]` openness; the HUD env emits two finger qpos (m) instead, so the agent feeds an approximate scalar (finger-qpos sum) here — units differ; GR00T's 0.2 state-dropout mitigates this, and the gripper STATE does not affect the emitted action (only conditioning)."
+        },
+        "action.delta_eef_pos": {
+            "role": "action",
+            "state_type": "EE_DEL_POS",
+            "state_representation": "XYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "m",
+            "shape": [3],
+            "order": "0-2",
+            "names": ["action.x", "action.y", "action.z"],
+            "normalization": "quantile",
+            "stats": {
+                "min": [-0.02875, -0.0417, -0.0261],
+                "max": [0.02831, 0.0409, 0.04018],
+                "mean": [0.00023, 0.00013, -0.00013],
+                "std": [0.00977, 0.0137, 0.01268]
+            },
+            "comment": "EE translation delta (GR00T action keys x,y,z). Values are small per-step deltas (std ~0.01); min/max are q01/q99. Sent directly to the env's ee_del action (dims 0-2)."
+        },
+        "action.delta_eef_euler": {
+            "role": "action",
+            "state_type": "EE_DEL_ROT",
+            "state_representation": "EULXYZ",
+            "frame": "base",
+            "dtype": "float32",
+            "units": "rad",
+            "shape": [3],
+            "order": "3-5",
+            "names": ["action.roll", "action.pitch", "action.yaw"],
+            "normalization": "quantile",
+            "stats": {
+                "min": [-0.08053, -0.0925, -0.20739],
+                "max": [0.08173, 0.07761, 0.20385],
+                "mean": [-0.00014, -0.00039, 0.00024],
+                "std": [0.02846, 0.03052, 0.07739]
+            },
+            "comment": "EE rotation delta as euler XYZ (GR00T action keys roll,pitch,yaw). The HUD simpler env's ee_del action is AXIS-ANGLE, so the agent converts euler->rotvec (scipy R.from_euler('xyz').as_rotvec()), exactly as the validated vla_jepa_widowx agent does. state_type EE_DEL_ROT matches the env (representation differs by design; the adapter reconciles)."
+        },
+        "action.gripper": {
+            "role": "action",
+            "state_type": "GRIPPER_ABS_POS",
+            "state_representation": "NORM01",
+            "dtype": "float32",
+            "units": "none",
+            "shape": [1],
+            "order": "6",
+            "names": ["action.gripper"],
+            "limits": {"min": [0.0], "max": [1.0]},
+            "normalization": "quantile",
+            "stats": {"min": [0.0], "max": [1.0], "mean": [0.57659], "std": [0.49665]},
+            "comment": "Absolute gripper in [0,1] (1=open, 0=close in GR00T training). The official eval binarizes to SimplerEnv [-1,1] via 2*(g>0.5)-1 (so open->+1, close->-1); the HUD simpler env's gripper action is the same [-1,1] range, so the agent emits {+1 open / -1 close}."
+        }
+    },
+    "comment": "NVIDIA Isaac GR00T N1.7 post-trained on SimplerEnv Bridge/WidowX (nvidia/GR00T-N1.7-SimplerEnv-Bridge, EmbodimentTag.SIMPLER_ENV_WIDOWX). Cosmos-Reason2-2B VLM backbone + flow-matching DiT action head (4 denoising steps, 3B params). Inference via gr00t.policy.gr00t_policy.Gr00tPolicy.get_action({'video':{image_0},'state':{x,y,z,roll,pitch,yaw,pad,gripper},'language':{...}}) -> action chunk (T=8) of {x,y,z,roll,pitch,yaw,gripper}. Action signature EE_DEL_POS+EE_DEL_ROT+GRIPPER_ABS_POS matches the simpler env (widowx.json). Official SimplerEnv eval runs n_action_steps=1 (re-infer every step, execute chunk[0]); the agent mirrors this (open_loop_horizon=1). Pairs the `simpler` env (BENCH_CONTROL=delta). Requires the `gr00t` package (NVIDIA/Isaac-GR00T) installed; not a LeRobot policy (custom GR00TModel)."
+}

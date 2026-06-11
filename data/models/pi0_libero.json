@@ -6,10 +6,6 @@
     "robot_class": "arm7g1",
     "chunk_size": 50,
     "control_rate": 10,
-    "robot_type_variables": {
-        "franka_panda_libero": {}
-    },
-    "decision_variables": {},
     "features": {
         "observation.images.image": {
             "role": "observation",
@@ -153,5 +149,5 @@
             "comment": "Gripper open/close, normalized [-1,1], ABSOLUTE (arm is delta)."
         }
     },
-    "comment": "pi0 flow-matching VLA (PaliGemma VLM + action expert) finetuned on LIBERO, one Franka Panda. Single action (ee_del split into pos/rot/gripper). pi0_libero_base ships no stats. Matching uses robot_type_variables only."
+    "comment": "pi0 flow-matching VLA (PaliGemma VLM + action expert) finetuned on LIBERO, one Franka Panda. Single action (ee_del split into pos/rot/gripper). pi0_libero_base ships no stats. Matching gates on robot_type."
 }

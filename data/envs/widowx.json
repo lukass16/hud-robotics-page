@@ -1,5 +1,5 @@
 {
-    "robot_type": "widowx",
+    "robot_type": "widowx250s_bridge",
     "robot_class": "arm6g1",
     "control_rate": 5,
     "features": {
